@@ -3,6 +3,8 @@
   "version": "0.0.0",
   "scripts": {
     "serve": "run-p dev:h5 build:unocss:watch",
+    "build": "uni build",
+    "prebuild": "unocss",
     "dev:custom": "uni -p",
     "dev:h5": "uni",
     "dev:h5:ssr": "uni --ssr",
@@ -35,7 +37,6 @@
     "build:quickapp-webview": "uni build -p quickapp-webview",
     "build:quickapp-webview-huawei": "uni build -p quickapp-webview-huawei",
     "build:quickapp-webview-union": "uni build -p quickapp-webview-union",
-    "build:unocss": "unocss \"src/**/*.vue\" --output ./src/static/uno.css",
     "build:unocss:watch": "unocss --watch"
   },
   "dependencies": {
