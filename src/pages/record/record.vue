@@ -33,14 +33,6 @@
             <text class="unit">ml</text>
           </view>
         </view>
-        <view class="form-item">
-          <text class="label">时间</text>
-          <input type="datetime-local" v-model="form.time" />
-        </view>
-        <view class="form-item">
-          <text class="label">备注</text>
-          <textarea v-model="form.note" placeholder="请输入备注" style="height: 120rpx;"></textarea>
-        </view>
       </view>
 
       <!-- 大便记录 -->
@@ -63,14 +55,6 @@
             </label>
           </view>
         </view>
-        <view class="form-item">
-          <text class="label">时间</text>
-          <input type="datetime-local" v-model="form.time" />
-        </view>
-        <view class="form-item">
-          <text class="label">备注</text>
-          <textarea v-model="form.note" placeholder="请输入备注" style="height: 120rpx;"></textarea>
-        </view>
       </view>
 
       <!-- 营养品记录 -->
@@ -78,14 +62,6 @@
         <view class="form-item">
           <text class="label">营养品名称</text>
           <input type="text" v-model="form.valueName" placeholder="请输入营养品名称" />
-        </view>
-        <view class="form-item">
-          <text class="label">时间</text>
-          <input type="datetime-local" v-model="form.time" />
-        </view>
-        <view class="form-item">
-          <text class="label">备注</text>
-          <textarea v-model="form.note" placeholder="请输入备注" style="height: 120rpx;"></textarea>
         </view>
       </view>
 
@@ -95,9 +71,17 @@
           <text class="label">药品名称</text>
           <input type="text" v-model="form.valueName" placeholder="请输入药品名称" />
         </view>
+      </view>
+
+      <!-- 共用字段 -->
+      <view class="common-fields">
         <view class="form-item">
           <text class="label">时间</text>
-          <input type="datetime-local" v-model="form.time" />
+          <picker mode="time" :value="form.time" @change="onTimeChange">
+            <view class="picker-content">
+              <text :class="{'placeholder': !form.time}">{{ form.time || '请选择时间' }}</text>
+            </view>
+          </picker>
         </view>
         <view class="form-item">
           <text class="label">备注</text>
@@ -148,7 +132,7 @@ export default {
         stoolColor: '2',
         valueName: '',
         value: '',
-        time: new Date().toLocaleString(),
+        time: new Date().toLocaleTimeString().substring(0, 5),
         note: ''
       }
     }
@@ -290,7 +274,7 @@ export default {
         stoolColor: '2',
         valueName: '',
         value: '',
-        time: new Date().toLocaleString(),
+        time: new Date().toLocaleTimeString().substring(0, 5),
         note: ''
       }
     },
@@ -305,6 +289,10 @@ export default {
       }
       return this.form.valueName
     },
+
+    onTimeChange(e) {
+      this.form.time = e.detail.value
+    },
   }
 }
 </script>
@@ -313,7 +301,7 @@ export default {
 .content {
   padding: 20rpx;
   background-color: #f5f5f5;
-  min-height: 100vh;
+  min-height: calc(100vh - 124px);
 }
 
 .record-tabs {
@@ -347,6 +335,12 @@ export default {
 
 .form-section {
   margin-bottom: 20rpx;
+}
+
+.common-fields {
+  margin-top: 20rpx;
+  padding-top: 20rpx;
+  border-top: 1rpx solid #f0f0f0;
 }
 
 .form-item {
@@ -400,10 +394,29 @@ export default {
 
 input, textarea {
   width: 100%;
+  box-sizing: border-box;
   border: 1rpx solid #e0e0e0;
   border-radius: 5rpx;
   padding: 15rpx;
   font-size: 26rpx;
+  min-height: 80rpx;
+  line-height: 1.5;
+}
+
+.picker-content {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 80rpx;
+  display: flex;
+  align-items: center;
+  border: 1rpx solid #e0e0e0;
+  border-radius: 5rpx;
+  padding: 15rpx;
+  font-size: 26rpx;
+}
+
+.picker-content .placeholder {
+  color: #999999;
 }
 
 .submit-btn {
@@ -411,7 +424,7 @@ input, textarea {
   background-color: #4CD964;
   color: #ffffff;
   font-size: 32rpx;
-  padding: 20rpx;
+  padding: 10rpx 20rpx;
   border-radius: 10rpx;
   margin-top: 30rpx;
 }
