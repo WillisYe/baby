@@ -145,6 +145,11 @@ export default {
     uni.$on('recordUpdated', () => {
       this.loadRecentRecords()
     })
+    // 监听宝宝信息更新事件
+    uni.$on('babyInfoUpdated', () => {
+      this.babyInfo = getBabyInfo()
+      this.calculateBabyAge()
+    })
   },
   onShow() {
     // 每次页面显示时计算宝宝年龄
