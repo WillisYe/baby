@@ -56,6 +56,9 @@ importers:
       '@dcloudio/uni-quickapp-webview':
         specifier: 3.0.0-5000620260331001
         version: 3.0.0-5000620260331001(postcss@8.5.9)(rollup@4.60.1)(vue@3.5.32)
+      '@flaregun-net/proxyflare-for-pages':
+        specifier: ^0.1.0
+        version: 0.1.0(@cloudflare/workers-types@3.14.0)
       '@vitejs/plugin-basic-ssl':
         specifier: ^2.3.0
         version: 2.3.0(vite@5.2.8(@types/node@25.6.0)(terser@5.46.1))
@@ -735,6 +738,9 @@ packages:
   '@buttercup/fetch@0.2.1':
     resolution: {integrity: sha512-sCgECOx8wiqY8NN1xN22BqqKzXYIG2AicNLlakOAI4f0WgyLVUbAigMf8CZhBtJxdudTcB1gD5lciqi44jwJvg==, tarball: https://registry.npmmirror.com/@buttercup/fetch/-/fetch-0.2.1.tgz}
 
+  '@cloudflare/workers-types@3.14.0':
+    resolution: {integrity: sha512-F6lZuzu/vNl9AxOq1U3x2UCi68bcE1O59cKGQ5ntRh3lGQfd3vers6NUag02T7P+qFCHaAp78QN6fRmq12Y3iA==, tarball: https://registry.npmmirror.com/@cloudflare/workers-types/-/workers-types-3.14.0.tgz}
+
   '@code-inspector/core@1.5.1':
     resolution: {integrity: sha512-Y9JdgoxVh93xRMupTa1lT/v+UlcBEpM7Y1BTxQy924wSe6VVEXsJ1nPJ/Ob2HPMUAA6F568aHALi2KDUhA2kzg==, tarball: https://registry.npmmirror.com/@code-inspector/core/-/core-1.5.1.tgz}
 
@@ -1017,6 +1023,11 @@ packages:
     engines: {node: '>=12'}
     cpu: [x64]
     os: [win32]
+
+  '@flaregun-net/proxyflare-for-pages@0.1.0':
+    resolution: {integrity: sha512-uVZ4s1GxpYJ+InnXLTczHqjrIUSWqxiHV2I6NQj4AVyV5ZozbMhuFXETpnk0IT5a4aRXew7rGMuYr4hzsu0T+g==, tarball: https://registry.npmmirror.com/@flaregun-net/proxyflare-for-pages/-/proxyflare-for-pages-0.1.0.tgz}
+    peerDependencies:
+      '@cloudflare/workers-types': 3.14.0
 
   '@iconify/types@2.0.0':
     resolution: {integrity: sha512-+wluvCrRhXrhyOmRDJ3q8mux9JkKy5SJ/v8ol2tu4FVjyYvtEzkc/3pK15ET6RKg4b4w4BmTk1+gsCUhf21Ykg==, tarball: https://registry.npmmirror.com/@iconify/types/-/types-2.0.0.tgz}
@@ -5253,6 +5264,8 @@ snapshots:
     optionalDependencies:
       node-fetch: 3.3.2
 
+  '@cloudflare/workers-types@3.14.0': {}
+
   '@code-inspector/core@1.5.1':
     dependencies:
       '@vue/compiler-dom': 3.5.32
@@ -6023,6 +6036,10 @@ snapshots:
 
   '@esbuild/win32-x64@0.20.2':
     optional: true
+
+  '@flaregun-net/proxyflare-for-pages@0.1.0(@cloudflare/workers-types@3.14.0)':
+    dependencies:
+      '@cloudflare/workers-types': 3.14.0
 
   '@iconify/types@2.0.0': {}
 

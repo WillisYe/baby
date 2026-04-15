@@ -568,7 +568,7 @@
           // 判断是否在开发环境
           // #ifdef H5
           // 开发环境使用代理
-          if (import.meta.env.DEV) {
+          if (import.meta.env.DEV || true) {
             return '/webdav' + urlObj.pathname
           } else {
             return url
