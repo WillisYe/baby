@@ -64,10 +64,69 @@
     <view class="modal-mask" v-if="showRecordModal" @click="closeRecordModal">
       <view class="modal-content" @click.stop>
         <view class="modal-header">
+          <text class="modal-back" @click="closeRecordModal">‹</text>
           <text class="modal-title">{{ currentTypeRecords.title }}</text>
-          <text class="modal-close" @click="closeRecordModal">×</text>
+          <text v-if="currentTypeRecords.showChart && chartData.length > 0"
+                class="modal-chart-toggle"
+                @click="toggleChartType">
+            {{ chartType === 'bar' ? '📊' : '📈' }}
+          </text>
         </view>
         <scroll-view class="modal-body" scroll-y>
+          <!-- 图表区域 -->
+          <view v-if="currentTypeRecords.showChart && chartData.length > 0" class="chart-container">
+            <view class="chart-title">每日奶量趋势 (ml)</view>
+            <scroll-view class="chart-content scroll-view-x" scroll-x>
+              <!--  -->
+              <view v-if="chartType === 'bar'" class="bar-chart" :style="{ width: chartData.length * 80 + 'rpx' }">
+                <view v-for="(item, index) in chartData" :key="index" class="bar-item">
+                  <view class="bar-wrapper">
+                    <view class="bar" :style="{ height: getBarHeight(item.amount) + 'rpx' }"></view>
+                    <text class="bar-value">{{ item.amount }}</text>
+                  </view>
+                  <text class="bar-label">{{ item.date }}</text>
+                </view>
+              </view>
+              <!--  -->
+              <view v-else class="line-chart" :style="{ width: chartData.length * 80 + 'rpx' }">
+                <view class="line-chart-container">
+                  <view class="line-chart-y-axis">
+                    <text v-for="(value, index) in getYAxisValues()" :key="index" class="y-axis-label">{{ value }}</text>
+                  </view>
+                  <view class="line-chart-content">
+                    <svg class="line-svg" :style="{ width: chartData.length * 80 + 'rpx' }" :viewBox="'0 0 ' + (chartData.length * 80) + ' 200'" preserveAspectRatio="none">
+                      <!-- 折线 -->
+                      <polyline
+                        :points="getLinePoints()"
+                        fill="none"
+                        stroke="#4CD964"
+                        stroke-width="2"
+                      />
+                      <!-- 数据点 -->
+                      <circle
+                        v-for="(point, index) in getLinePoints().split(' ')"
+                        :key="index"
+                        :cx="point.split(',')[0]"
+                        :cy="point.split(',')[1]"
+                        r="3"
+                        fill="#4CD964"
+                      />
+                    </svg>
+                    <!-- 数据点数值标签 -->
+                    <view class="data-point-labels">
+                      <!-- top: (point.split(',')[1] - 0 ) + 'rpx' -->
+                      <text v-for="(point, index) in getLinePoints().split(' ')" :key="index" class="data-point-label" :style="{ left: point.split(',')[0] + 'rpx', top: 185 + 'rpx' }">{{ chartData[index].amount }}</text>
+                    </view>
+                    <view class="x-axis-labels">
+                      <text v-for="(item, index) in chartData" :key="index" class="x-axis-label">{{ item.date }}</text>
+                    </view>
+                  </view>
+                </view>
+              </view>
+            </scroll-view>
+          </view>
+
+          <!-- 记录列表 -->
           <view class="record-group" v-for="(group, date) in currentTypeRecords.groupedRecords" :key="date">
             <text class="group-title">{{ date }}</text>
             <view class="group-records">
@@ -97,8 +156,11 @@ export default {
       currentTypeRecords: {
         title: '',
         records: [],
-        groupedRecords: {}
+        groupedRecords: {},
+        showChart: false
       },
+      chartType: 'bar', // 'bar' 或 'line'
+      chartData: [], // 图表数据
       babyInfo: {
         name: '宝宝',
         birthDate: '2025-01-13'
@@ -384,12 +446,22 @@ export default {
       // 按日期分组
       const groupedRecords = this.groupRecordsByDate(formattedRecords, item.type)
 
+      // 计算图表数据（仅配方奶显示图表）
+      const showChart = item.type === 'formula'
+      const chartData = showChart ? this.calculateChartData(typeRecords) : []
+
       this.currentTypeRecords = {
         title: config.name,
         records: typeRecords,
         formattedRecords: formattedRecords,
-        groupedRecords: groupedRecords
+        groupedRecords: groupedRecords,
+        showChart: showChart
       }
+
+      // 设置图表数据
+      this.chartData = chartData
+      this.chartType = 'bar' // 默认显示柱状图
+
       this.showRecordModal = true
     },
 
@@ -500,6 +572,96 @@ export default {
      */
     closeRecordModal() {
       this.showRecordModal = false
+    },
+
+    /**
+     * 切换图表类型
+     */
+    toggleChartType() {
+      this.chartType = this.chartType === 'bar' ? 'line' : 'bar'
+    },
+
+    /**
+     * 计算图表数据（每日奶量）
+     */
+    calculateChartData(records) {
+      // 按日期统计每天的奶量
+      const dailyData = {}
+
+      records.forEach(record => {
+        if (!record.value || isNaN(parseFloat(record.value))) return
+
+        const timestamp = parseFloat(record.eventTime) * 1000
+        const date = new Date(timestamp)
+        const dateStr = `${date.getMonth() + 1}/${date.getDate()}`
+
+        if (!dailyData[dateStr]) {
+          dailyData[dateStr] = 0
+        }
+        dailyData[dateStr] += parseFloat(record.value)
+      })
+
+      // 转换为数组，按日期排序
+      const chartData = Object.keys(dailyData)
+        .map(date => ({
+          date: date,
+          amount: dailyData[date]
+        }))
+        .sort((a, b) => {
+          const [aMonth, aDay] = a.date.split('/').map(Number)
+          const [bMonth, bDay] = b.date.split('/').map(Number)
+          return aMonth - bMonth || aDay - bDay
+        })
+
+      // 保留最近30天的数据
+      return chartData.slice(-30)
+    },
+
+    /**
+     * 获取柱状图高度
+     */
+    getBarHeight(amount) {
+      if (!this.chartData || this.chartData.length === 0) return 0
+
+      const maxAmount = Math.max(...this.chartData.map(item => item.amount))
+      const maxHeight = 140 // 最大高度 rpx
+      return (amount / maxAmount) * maxHeight
+    },
+
+    /**
+     * 获取 Y 轴刻度值
+     */
+    getYAxisValues() {
+      if (!this.chartData || this.chartData.length === 0) return []
+
+      const maxAmount = Math.max(...this.chartData.map(item => item.amount))
+      const step = Math.ceil(maxAmount / 5 / 50) * 50 // 向上取整到50的倍数
+
+      const values = []
+      for (let i = 0; i <= maxAmount; i += step) {
+        values.push(i)
+      }
+
+      // 反转数组，使Y轴从上到下显示从大到小的数字
+      return values.reverse()
+    },
+
+    /**
+     * 获取折线图的点坐标
+     */
+    getLinePoints() {
+      if (!this.chartData || this.chartData.length === 0) return ''
+
+      const maxAmount = Math.max(...this.chartData.map(item => item.amount))
+      const chartWidth = this.chartData.length * 80
+      const chartHeight = 200
+      const xStep = 80
+
+      return this.chartData.map((item, index) => {
+        const x = index * xStep + 40 // 每个数据点居中于80rpx的宽度
+        const y = chartHeight - (item.amount / maxAmount) * chartHeight
+        return `${x},${y}`
+      }).join(' ')
     },
 
     navigateToRecord(type) {
@@ -713,10 +875,27 @@ export default {
   flex-shrink: 0;
 }
 
+.modal-back {
+  font-size: 60rpx;
+  color: #333333;
+  line-height: 1;
+  padding: 0 10rpx;
+  cursor: pointer;
+}
+
 .modal-title {
   font-size: 36rpx;
   font-weight: bold;
   color: #333333;
+  flex: 1;
+  text-align: center;
+}
+
+.modal-chart-toggle {
+  font-size: 40rpx;
+  line-height: 1;
+  padding: 0 10rpx;
+  cursor: pointer;
 }
 
 .modal-close {
@@ -730,6 +909,158 @@ export default {
   flex: 1;
   padding: 30rpx 20rpx;
   overflow-y: auto;
+  box-sizing: border-box;
+}
+
+/* 图表样式 */
+.chart-container {
+  background-color: #f8f8f8;
+  border-radius: 12rpx;
+  padding: 20rpx;
+  margin-bottom: 30rpx;
+}
+
+.chart-title {
+  font-size: 28rpx;
+  font-weight: 500;
+  color: #333333;
+  margin-bottom: 20rpx;
+  text-align: center;
+}
+
+.chart-content {
+  min-height: 200rpx;
+}
+
+.scroll-view-x {
+  width: 100%;
+  white-space: nowrap;
+}
+
+/* 柱状图样式 */
+.bar-chart {
+  display: inline-flex;
+  justify-content: flex-start;
+  align-items: flex-end;
+  height: 200rpx;
+  padding: 20rpx 0;
+}
+
+.bar-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 80rpx;
+  flex-shrink: 0;
+  margin-right: 0;
+}
+
+.bar-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  height: 140rpx;
+  width: 100%;
+}
+
+.bar {
+  width: 40rpx;
+  background: linear-gradient(180deg, #4CD964 0%, #2AAE68 100%);
+  border-radius: 4rpx 4rpx 0 0;
+  transition: height 0.3s ease;
+}
+
+.bar-value {
+  font-size: 20rpx;
+  color: #666666;
+  margin-top: 8rpx;
+}
+
+.bar-label {
+  font-size: 20rpx;
+  color: #999999;
+  margin-top: 8rpx;
+}
+
+/* 折线图样式 */
+.line-chart {
+  display: inline-flex;
+  height: 200rpx;
+  padding: 20rpx 0;
+}
+
+.line-chart-container {
+  display: flex;
+  height: 200rpx;
+  padding: 10rpx 0;
+}
+
+.line-chart-y-axis {
+  width: 60rpx;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding-right: 10rpx;
+}
+
+.y-axis-label {
+  font-size: 20rpx;
+  color: #999999;
+  text-align: right;
+}
+
+.line-chart-content {
+  flex: 1;
+  position: relative;
+  padding-bottom: 30rpx;
+}
+
+.data-point-labels {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 30rpx;
+  pointer-events: none;
+}
+
+.data-point-label {
+  position: absolute;
+  font-size: 20rpx;
+  /* color: #4CD964; */
+  color: #666;
+  font-weight: bold;
+  text-align: center;
+  transform: translate(-50%, -120%);
+}
+
+.x-axis-labels {
+  display: flex;
+  justify-content: flex-start;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+}
+
+.x-axis-label {
+  font-size: 20rpx;
+  color: #999999;
+  width: 80rpx;
+  flex-shrink: 0;
+  text-align: center;
+}
+
+.line-svg {
+  width: 100%;
+  height: 100%;
+}
+
+.line-path {
+  fill: none;
+  stroke: #4CD964;
+  stroke-width: 2rpx;
 }
 
 .record-group {
