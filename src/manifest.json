@@ -97,6 +97,13 @@
     "mp-toutiao" : {
         "usingComponents" : true
     },
+    "h5" : {
+        "devServer" : {
+            "https" : true,
+            // "port" : 80,
+            "allowedHosts" : "all"
+        }
+    },
     "uniStatistics": {
         "enable": false
     },

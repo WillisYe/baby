@@ -5,6 +5,7 @@
 .ml{margin-left:1rem;}
 .block{display:block;}
 .inline-block{display:inline-block;}
+.contents{display:contents;}
 .hidden{display:none;}
 .flex{display:flex;}
 .flex-shrink{flex-shrink:1;}

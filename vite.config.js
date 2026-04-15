@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite'
 import uni from '@dcloudio/vite-plugin-uni'
 import { codeInspectorPlugin } from 'code-inspector-plugin'
+import basicSsl from '@vitejs/plugin-basic-ssl'
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -9,6 +10,7 @@ export default defineConfig({
     codeInspectorPlugin({
       bundler: 'vite',
     }),
+    basicSsl(),
   ],
   css: {
     preprocessorOptions: {
@@ -17,4 +19,13 @@ export default defineConfig({
       },
     },
   },
+  server: {
+    proxy: {
+      '/webdav': {
+        target: 'https://dav.jianguoyun.com',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/webdav/, '')
+      }
+    }
+  }
 })
