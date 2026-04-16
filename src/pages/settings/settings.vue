@@ -686,8 +686,8 @@
 
           if (result.status === 'forbidden') {
             uni.showToast({
-              title: '连接成功（当前目录权限受限）',
-              icon: 'success',
+              title: '✔️ 连接成功（当前目录权限受限）',
+              icon: 'none',
               duration: 3000
             })
             return
