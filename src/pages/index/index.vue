@@ -94,28 +94,21 @@
                     <text v-for="(value, index) in getYAxisValues()" :key="index" class="y-axis-label">{{ value }}</text>
                   </view>
                   <view class="line-chart-content">
-                    <svg class="line-svg" :style="{ width: chartData.length * 80 + 'rpx' }" :viewBox="'0 0 ' + (chartData.length * 80) + ' 200'" preserveAspectRatio="none">
-                      <!-- 折线 -->
-                      <polyline
-                        :points="getLinePoints()"
-                        fill="none"
-                        stroke="#4CD964"
-                        stroke-width="2"
-                      />
-                      <!-- 数据点 -->
-                      <circle
-                        v-for="(point, index) in getLinePoints().split(' ')"
-                        :key="index"
-                        :cx="point.split(',')[0]"
-                        :cy="point.split(',')[1]"
-                        r="3"
-                        fill="#4CD964"
-                      />
-                    </svg>
+                    <canvas
+                      canvas-id="lineCanvas"
+                      class="line-canvas"
+                      :style="{ width: chartData.length * 80 + 'rpx', height: '200rpx' }"
+                      :width="chartData.length * 80"
+                      :height="200"
+                    ></canvas>
                     <!-- 数据点数值标签 -->
                     <view class="data-point-labels">
-                      <!-- top: (point.split(',')[1] - 0 ) + 'rpx' -->
-                      <text v-for="(point, index) in getLinePoints().split(' ')" :key="index" class="data-point-label" :style="{ left: point.split(',')[0] + 'rpx', top: 185 + 'rpx' }">{{ chartData[index].amount }}</text>
+                      <text
+                        v-for="(point, index) in getLinePointObjects()"
+                        :key="index"
+                        class="data-point-label"
+                        :style="{ left: point.x + 'rpx', top: 185 + 'rpx' }"
+                      >{{ chartData[index].amount }}</text>
                     </view>
                     <view class="x-axis-labels">
                       <text v-for="(item, index) in chartData" :key="index" class="x-axis-label">{{ item.date }}</text>
@@ -412,7 +405,6 @@ export default {
      */
     showTypeRecords(item) {
       const config = this.typeConfig[item.type]
-      console.log('%c item.type', 'color:red; background:yellow;', item.type)
       if (!config) return
 
       // 获取该类型的所有记录
@@ -579,6 +571,53 @@ export default {
      */
     toggleChartType() {
       this.chartType = this.chartType === 'bar' ? 'line' : 'bar'
+      this.$nextTick(() => {
+        if (this.chartType === 'line') {
+          this.drawLineChart()
+        }
+      })
+    },
+
+    /**
+     * 绘制折线图到 Canvas
+     */
+    drawLineChart() {
+      if (!this.chartData || this.chartData.length === 0) return
+
+      const width = uni.upx2px(this.chartData.length * 80)
+      const height = uni.upx2px(200)
+
+      const ctx = uni.createCanvasContext('lineCanvas', this)
+      if (!ctx) return
+
+      const points = this.getLinePointObjects(width, height)
+      if (!points.length) return
+
+      // 背景清空
+      ctx.clearRect(0, 0, width, height)
+
+      // 绘制折线
+      ctx.beginPath()
+      ctx.setStrokeStyle('#4CD964')
+      ctx.setLineWidth(2)
+      points.forEach((point, index) => {
+        if (index === 0) {
+          ctx.moveTo(point.x, point.y)
+        } else {
+          ctx.lineTo(point.x, point.y)
+        }
+      })
+      ctx.stroke()
+
+      // 绘制数据点
+      ctx.setFillStyle('#4CD964')
+      points.forEach(point => {
+        ctx.beginPath()
+        ctx.arc(point.x, point.y, 4, 0, Math.PI * 2)
+        ctx.fill()
+      })
+
+      ctx.draw()
     },
 
     /**
@@ -649,19 +688,27 @@ export default {
     /**
      * 获取折线图的点坐标
      */
-    getLinePoints() {
-      if (!this.chartData || this.chartData.length === 0) return ''
+    getLinePointObjects(canvasWidth = 0, canvasHeight = 200) {
+      if (!this.chartData || this.chartData.length === 0) return []
 
-      const maxAmount = Math.max(...this.chartData.map(item => item.amount))
-      const chartWidth = this.chartData.length * 80
-      const chartHeight = 200
-      const xStep = 80
+      const maxAmount = Math.max(...this.chartData.map(item => item.amount), 1)
+      const paddingTop = 20
+      const paddingBottom = 20
+      const chartHeight = canvasHeight - paddingTop - paddingBottom
+      const xStep = canvasWidth > 0 ? canvasWidth / Math.max(this.chartData.length, 1) : 80
 
       return this.chartData.map((item, index) => {
-        const x = index * xStep + 40 // 每个数据点居中于80rpx的宽度
-        const y = chartHeight - (item.amount / maxAmount) * chartHeight
-        return `${x},${y}`
-      }).join(' ')
+        const x = index * xStep + xStep / 2 // 每个数据点居中
+        const y = paddingTop + (1 - item.amount / maxAmount) * chartHeight
+        return {
+          x,
+          y: Number.isFinite(y) ? y : canvasHeight - paddingBottom
+        }
+      })
+    },
+
+    linePointString() {
+      return this.getLinePointObjects().map(point => `${point.x},${point.y}`).join(' ')
     },
 
     navigateToRecord(type) {
@@ -1055,6 +1102,13 @@ export default {
 .line-svg {
   width: 100%;
   height: 100%;
+  display: block;
+}
+
+.line-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
 }
 
 .line-path {

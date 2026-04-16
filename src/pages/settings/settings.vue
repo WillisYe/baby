@@ -168,7 +168,6 @@
     onLoad() {
       // 加载宝宝信息
       this.babyInfo = getBabyInfo()
-      console.log('%c this.babyInfo', 'color:red; background:yellow;', this.babyInfo)
       // 加载 WebDAV 配置
       const savedWebdav = uni.getStorageSync('webdav_config')
       if (savedWebdav) {
