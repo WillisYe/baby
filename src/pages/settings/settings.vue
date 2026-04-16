@@ -134,12 +134,7 @@
 
 <script>
   import { getRecords, getBabyInfo, importRecords, setBabyInfo } from '@/utils/recordStore.js'
-  // #ifdef H5
-  import { createClient } from "webdav";
-  // #endif
-  // #ifndef H5
-  import { AuthType, createClient } from "@/utils/webdav.js";
-  // #endif
+  import webdav from '@/utils/webdavService.js'
 
   export default {
     data() {
@@ -564,160 +559,6 @@
         });
       },
 
-      /**
-       * 将 WebDAV URL 转换为代理 URL（解决 CORS 问题）
-       */
-      getProxyUrl(url) {
-        try {
-          // 判断是否在开发环境
-          // #ifdef H5
-          // 开发环境使用代理
-          const urlObj = new URL(url)
-          if (import.meta.env.DEV || true) {
-            return '/webdav' + urlObj.pathname
-          } else {
-            return url
-          }
-          // #endif
-
-          // #ifndef H5
-          // 非 H5 环境（APP、小程序等）直接返回原 URL
-          return url
-          // #endif
-        } catch (e) {
-          console.error('URL 转换失败:', e)
-          return url
-        }
-      },
-
-      /**
-       * 构建 WebDAV 认证配置列表
-       */
-      getWebdavAuthConfigs() {
-        const baseClientConfig = {
-          username: this.webdavConfig.username,
-          password: this.webdavConfig.password,
-        }
-        const isJianguoyun = String(this.webdavConfig.url || '').toLowerCase().includes('jianguoyun.com')
-
-        // #ifdef H5
-        return [baseClientConfig]
-        // #endif
-
-        // #ifndef H5
-        const jianguoyunHeaders = {
-          // 坚果云对部分非浏览器端请求较敏感，补齐常见头提升兼容性
-          'User-Agent': 'Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 (KHTML, like Gecko) Mobile Safari/537.36',
-          'Accept': '*/*'
-        }
-        // 坚果云在当前 APP 端实现中 Digest 兼容性较差，优先（且仅）走 Password。
-        if (isJianguoyun) {
-          return [{ ...baseClientConfig, authType: AuthType.Password, headers: jianguoyunHeaders }]
-        }
-        // 其他服务优先 Digest（部分 WebDAV 服务器仅接受 Digest），失败后回退 Password。
-        return [
-          { ...baseClientConfig, authType: AuthType.Digest },
-          { ...baseClientConfig, authType: AuthType.Password }
-        ]
-        // #endif
-      },
-
-      /**
-       * 判断是否需要尝试下一种认证方式
-       */
-      shouldRetryWebdavAuth(error) {
-        const msg = String(error?.message || '').toLowerCase()
-        const statusCode = String(error?.response?.status || '')
-        const errorText = `${msg} ${statusCode}`
-        return (
-          errorText.includes('www-authenticate') ||
-          errorText.includes('invalid response: 401')
-        )
-      },
-
-      /**
-       * 是否为可识别的 HTTP 状态错误
-       */
-      isWebdavHttpStatusError(error) {
-        const msg = String(error?.message || '').toLowerCase()
-        const statusCode = String(error?.response?.status || '')
-        const errorText = `${msg} ${statusCode}`
-        return (
-          errorText.includes('401') ||
-          errorText.includes('403') ||
-          errorText.includes('404') ||
-          errorText.includes('405') ||
-          errorText.includes('500')
-        )
-      },
-
-      base64Encode(input) {
-        try {
-          // #ifdef H5
-          return btoa(input)
-          // #endif
-          // #ifndef H5
-          return plus.io.convertLocalFileSystemURL ? btoa(input) : btoa(input)
-          // #endif
-        } catch (e) {
-          // 兼容某些运行环境缺少 btoa 的场景
-          return Buffer.from(input, 'utf-8').toString('base64')
-        }
-      },
-
-      buildWebdavBasicAuthHeader() {
-        const credentials = `${this.webdavConfig.username}:${this.webdavConfig.password || ''}`
-        return `Basic ${this.base64Encode(credentials)}`
-      },
-
-      requestWebdavPropfind(path) {
-        const targetUrl = `${this.webdavConfig.url.replace(/\/+$/, '')}/${this.getWebdavClientPath(path)}`
-        return new Promise((resolve, reject) => {
-          uni.request({
-            url: targetUrl,
-            method: 'PROPFIND',
-            sslVerify: false,
-            header: {
-              Authorization: this.buildWebdavBasicAuthHeader(),
-              Depth: '0',
-              Accept: 'text/plain,application/xml'
-            },
-            success: (res) => resolve(res),
-            fail: (err) => reject(err)
-          })
-        })
-      },
-
-      requestWebdavRaw(method, path, options = {}) {
-        const baseUrl = this.webdavConfig.url.replace(/\/+$/, '')
-        const clientPath = this.getWebdavClientPath(path)
-        const targetUrl = clientPath ? `${baseUrl}/${clientPath}` : `${baseUrl}/`
-        return new Promise((resolve, reject) => {
-          uni.request({
-            url: targetUrl,
-            method,
-            sslVerify: false,
-            data: options.data,
-            header: {
-              Authorization: this.buildWebdavBasicAuthHeader(),
-              Accept: 'text/plain,application/xml,*/*',
-              ...(options.headers || {})
-            },
-            success: (res) => resolve(res),
-            fail: (err) => reject(err)
-          })
-        })
-      },
-
-      parseBackupFilesFromPropfind(xmlText) {
-        const content = String(xmlText || '')
-        const matches = [...content.matchAll(/<d:href>([^<]+)<\/d:href>/g)]
-        return matches
-          .map(m => decodeURIComponent(String(m[1] || '')))
-          .map(href => href.split('/').filter(Boolean).pop() || '')
-          .filter(name => name.startsWith('baby_records_backup_') && name.endsWith('.json'))
-      },
-
       buildWebdavExportPayload() {
         let records = getRecords()
         // 兼容历史数据结构：某些场景本地可能存成 { records } 或 { kExportKeyEvents }
@@ -756,73 +597,6 @@
        * 兼容不同端的 WebDAV 路径格式
        * APP 端在 baseURL 含路径前缀时（如 /dav/），应优先使用相对路径避免前缀被绝对路径覆盖。
        */
-      getWebdavClientPath(path) {
-        const rawPath = String(path || '/').trim() || '/'
-        // #ifdef H5
-        return rawPath
-        // #endif
-        // #ifndef H5
-        if (rawPath === '/') {
-          return ''
-        }
-        return rawPath.replace(/^\/+/, '')
-        // #endif
-      },
-
-      /**
-       * 使用多认证方式执行 WebDAV 操作
-       */
-      async runWebdavWithFallback(operation) {
-        const authConfigs = this.getWebdavAuthConfigs()
-        let lastError = null
-        let preferredError = null
-
-        for (let i = 0; i < authConfigs.length; i++) {
-          const config = authConfigs[i]
-          try {
-            const client = createClient(
-              this.getProxyUrl(this.webdavConfig.url),
-              config
-            )
-            return await operation(client, config)
-          } catch (err) {
-            lastError = err
-            if (this.isWebdavHttpStatusError(err)) {
-              preferredError = err
-            }
-            const hasNext = i < authConfigs.length - 1
-            if (hasNext && this.shouldRetryWebdavAuth(err)) {
-              continue
-            }
-            break
-          }
-        }
-
-        // 避免 Digest 解析异常覆盖真实的 HTTP 状态错误
-        throw (preferredError || lastError)
-      },
-
-      async checkWebdavAccessByClient(client, path) {
-        const clientPath = this.getWebdavClientPath(path)
-        try {
-          const exists = await client.exists(clientPath)
-          return { ok: true, exists }
-        } catch (err) {
-          const errText = `${String(err?.message || '')} ${String(err?.response?.status || '')}`
-          if (!errText.includes('403')) {
-            throw err
-          }
-        }
-
-        // 某些 WebDAV 服务会拒绝 exists 使用的方法，改用目录读取再次验证连通性。
-        try {
-          await client.getDirectoryContents(clientPath)
-          return { ok: true, exists: true, by: 'list' }
-        } catch (listErr) {
-          throw listErr
-        }
-      },
-
       /**
        * 显示 WebDAV 配置对话框
        */
@@ -892,119 +666,70 @@
         })
 
         try {
-          const testPath = this.webdavConfig.path || '/baby_records'
-
-          // #ifndef H5
-          // APP 端优先使用原生 PROPFIND 进行连通性验证，规避 webdav.js 在部分服务的兼容问题。
-          try {
-            const res = await this.requestWebdavPropfind(testPath)
-            const code = Number(res?.statusCode || 0)
-            if (code === 200 || code === 207) {
-              uni.hideLoading()
-              uni.showToast({
-                title: '连接成功',
-                icon: 'success'
-              })
-              return
-            }
-            if (code === 404) {
-              uni.hideLoading()
-              uni.showToast({
-                title: '路径不存在',
-                icon: 'none'
-              })
-              return
-            }
-            if (code === 401) {
-              uni.hideLoading()
-              uni.showToast({
-                title: '认证失败，请检查用户名和密码',
-                icon: 'none'
-              })
-              return
-            }
-            if (code === 403) {
-              uni.hideLoading()
-              uni.showToast({
-                title: '连接成功（当前目录权限受限）',
-                icon: 'success',
-                duration: 3000
-              })
-              return
-            }
-          } catch (appErr) {
-            // 忽略原生探测异常，继续走通用探测兜底
-          }
-          // #endif
-
-          let exists = false
-
-          try {
-            const result = await this.runWebdavWithFallback((client) => this.checkWebdavAccessByClient(client, testPath))
-            exists = !!result.exists
-          } catch (pathError) {
-            const pathErrorText = `${String(pathError?.message || '')} ${String(pathError?.response?.status || '')}`
-            if (pathErrorText.includes('403') && testPath !== '/') {
-              // 目标目录权限受限时，继续探测根目录可达性，区分“目录权限问题”和“连接问题”。
-              await this.runWebdavWithFallback((client) => this.checkWebdavAccessByClient(client, '/'))
-              uni.hideLoading()
-              uni.showToast({
-                title: '连接成功（当前目录权限受限）',
-                icon: 'success',
-                duration: 3000
-              })
-              return
-            }
-            throw pathError
-          }
+          const [result, error] = await webdav.test({
+            config: this.webdavConfig
+          })
 
           uni.hideLoading()
 
-          if (exists) {
+          if (error) {
+            throw error
+          }
+
+          if (result.status === 'ok') {
             uni.showToast({
               title: '连接成功',
               icon: 'success'
             })
-          } else {
-            uni.showToast({
-              title: '连接成功（目录不存在）',
-              icon: 'success'
-            })
+            return
           }
-        } catch (error) {
-          const rawErrorMsg = String(error?.message || '')
-          const statusCode = String(error?.response?.status || '')
-          const errorText = `${rawErrorMsg} ${statusCode}`
 
-          // 对测试连接而言，403 说明服务可达且认证成功，仅当前目录权限受限。
-          if (errorText.includes('403')) {
-            uni.hideLoading()
+          if (result.status === 'forbidden') {
             uni.showToast({
-              title: '连接成功（目录权限受限）',
+              title: '连接成功（当前目录权限受限）',
               icon: 'success',
               duration: 3000
             })
             return
           }
 
+          if (result.status === 'not_found') {
+            uni.showToast({
+              title: '路径不存在',
+              icon: 'none'
+            })
+            return
+          }
+
+          if (result.status === 'unauthorized') {
+            uni.showToast({
+              title: '认证失败，请检查用户名和密码',
+              icon: 'none'
+            })
+            return
+          }
+
+          uni.showToast({
+            title: '连接失败',
+            icon: 'none'
+          })
+        } catch (error) {
           uni.hideLoading()
           console.error('WebDAV 连接测试失败:', error)
 
+          const errorText = String(error?.message || '').toLowerCase()
           let errorMsg = '连接失败'
 
-          if (errorText) {
-            if (errorText.includes('401')) {
-              errorMsg = '认证失败，请检查用户名和密码'
-            } else if (errorText.includes('404')) {
-              errorMsg = '路径不存在'
-            } else if (errorText.includes('403')) {
-              const isJianguoyun = String(this.webdavConfig.url || '').toLowerCase().includes('jianguoyun.com')
-              errorMsg = isJianguoyun
-                ? '坚果云403：请使用应用密码，并确认地址为 https://dav.jianguoyun.com/dav/'
-                : '连接成功但目录无权限，请检查同步路径'
-            } else if (errorText.includes('timeout') || errorText.toLowerCase().includes('network')) {
-              errorMsg = '网络连接超时'
-            }
+          if (errorText.includes('401')) {
+            errorMsg = '认证失败，请检查用户名和密码'
+          } else if (errorText.includes('404')) {
+            errorMsg = '路径不存在'
+          } else if (errorText.includes('403')) {
+            errorMsg = String(this.webdavConfig.url || '').toLowerCase().includes('jianguoyun.com')
+              ? '坚果云403：请使用应用密码，并确认地址为 https://dav.jianguoyun.com/dav/'
+              : '连接成功但目录无权限，请检查同步路径'
+          } else if (errorText.includes('timeout') || errorText.includes('network')) {
+            errorMsg = '网络连接超时'
           }
 
           uni.showToast({
@@ -1039,73 +764,17 @@
         })
 
         try {
-          // #ifndef H5
           const exportData = this.buildWebdavExportPayload()
-          const jsonData = JSON.stringify(exportData, null, 2)
-          const basePath = this.webdavConfig.path || '/baby_records'
-          const fileName = `baby_records_backup_${Date.now()}.json`
-          const fullPath = `${basePath.replace(/\/+$/, '')}/${fileName}`
-          const latestPath = `${basePath.replace(/\/+$/, '')}/baby_records_latest.json`
-
-          // 目录不存在时尝试创建（MKCOL）
-          const checkRes = await this.requestWebdavRaw('PROPFIND', basePath, { headers: { Depth: '0' } })
-          if (Number(checkRes?.statusCode) === 404) {
-            const mkcolRes = await this.requestWebdavRaw('MKCOL', basePath)
-            const mkcolCode = Number(mkcolRes?.statusCode || 0)
-            if (![200, 201, 204, 405].includes(mkcolCode)) {
-              throw new Error(`MKCOL failed: ${mkcolCode}`)
-            }
-          }
-
-          const putRes = await this.requestWebdavRaw('PUT', fullPath, {
-            data: jsonData,
-            headers: { 'Content-Type': 'application/json; charset=utf-8' }
-          })
-          const putCode = Number(putRes?.statusCode || 0)
-          if (![200, 201, 204].includes(putCode)) {
-            throw new Error(`PUT failed: ${putCode}`)
-          }
-
-          // 维护固定文件，兼容禁止目录列举（PROPFIND Depth:1 返回 403）的服务端。
-          const latestRes = await this.requestWebdavRaw('PUT', latestPath, {
-            data: jsonData,
-            headers: { 'Content-Type': 'application/json; charset=utf-8' }
-          })
-          const latestCode = Number(latestRes?.statusCode || 0)
-          if (![200, 201, 204].includes(latestCode)) {
-            throw new Error(`PUT latest failed: ${latestCode}`)
-          }
-
-          uni.hideLoading()
-          uni.showToast({
-            title: '上传成功',
-            icon: 'success'
-          })
-          return
-          // #endif
-
-          await this.runWebdavWithFallback(async (client) => {
-            const exportData = this.buildWebdavExportPayload()
-            const jsonData = JSON.stringify(exportData, null, 2)
-            const fileName = `baby_records_backup_${Date.now()}.json`
-            const fullPath = `${this.getWebdavClientPath(this.webdavConfig.path || '/baby_records')}/${fileName}`
-
-            // 检查目录是否存在，不存在则创建
-            const basePath = this.webdavConfig.path || '/baby_records'
-            const clientBasePath = this.getWebdavClientPath(basePath)
-            const exists = await client.exists(clientBasePath)
-            if (!exists) {
-              await client.createDirectory(clientBasePath)
-            }
-
-            // 上传文件
-            await client.putFileContents(fullPath, jsonData, {
-              format: 'text',
-              overwrite: true
-            })
+          const [result, error] = await webdav.upload({
+            config: this.webdavConfig,
+            data: exportData
           })
 
           uni.hideLoading()
+
+          if (error) {
+            throw error
+          }
 
           uni.showToast({
             title: '上传成功',
@@ -1115,17 +784,17 @@
           uni.hideLoading()
           console.error('WebDAV 上传失败:', error)
 
+          const errorText = String(error?.message || '').toLowerCase()
           let errorMsg = '上传失败'
-          if (error.message) {
-            if (error.message.includes('401')) {
-              errorMsg = '认证失败'
-            } else if (error.message.includes('403')) {
-              errorMsg = '权限不足'
-            } else if (error.message.includes('timeout') || error.message.includes('network')) {
-              errorMsg = '网络连接失败'
-            } else if (error.message.includes('507')) {
-              errorMsg = '服务器空间不足'
-            }
+
+          if (errorText.includes('401')) {
+            errorMsg = '认证失败'
+          } else if (errorText.includes('403')) {
+            errorMsg = '权限不足'
+          } else if (errorText.includes('timeout') || errorText.includes('network')) {
+            errorMsg = '网络连接失败'
+          } else if (errorText.includes('507')) {
+            errorMsg = '服务器空间不足'
           }
 
           uni.showToast({
@@ -1160,123 +829,15 @@
         })
 
         try {
-          // #ifndef H5
-          const basePath = this.webdavConfig.path || '/baby_records'
-          const listRes = await this.requestWebdavRaw('PROPFIND', basePath, { headers: { Depth: '1' } })
-          const listCode = Number(listRes?.statusCode || 0)
-          if (listCode === 404) {
-            uni.hideLoading()
-            uni.showToast({
-              title: '备份目录不存在',
-              icon: 'none'
-            })
-            return
-          }
-          if (listCode === 403) {
-            // 服务端禁止目录列举时，回退读取固定最新备份文件。
-            const latestPath = `${basePath.replace(/\/+$/, '')}/baby_records_latest.json`
-            const latestRes = await this.requestWebdavRaw('GET', latestPath, {
-              headers: { Accept: 'application/json,text/plain,*/*' }
-            })
-            const latestCode = Number(latestRes?.statusCode || 0)
-            if (latestCode !== 200) {
-              throw new Error(`GET latest failed: ${latestCode}`)
-            }
-
-            uni.hideLoading()
-            try {
-              const text = typeof latestRes.data === 'string' ? latestRes.data : JSON.stringify(latestRes.data || {})
-              const data = JSON.parse(text)
-              this.processWebdavImport(data)
-            } catch (e) {
-              uni.showToast({
-                title: '数据格式错误',
-                icon: 'none'
-              })
-              console.error('解析 JSON 失败:', e)
-            }
-            return
-          }
-          if (![200, 207].includes(listCode)) {
-            throw new Error(`PROPFIND failed: ${listCode}`)
-          }
-
-          const backupFiles = this.parseBackupFilesFromPropfind(listRes?.data)
-            .map(name => ({ basename: name, timestamp: this.extractTimestamp(name) }))
-            .filter(item => item.timestamp > 0)
-            .sort((a, b) => b.timestamp - a.timestamp)
-
-          if (backupFiles.length === 0) {
-            uni.hideLoading()
-            uni.showToast({
-              title: '没有找到备份文件',
-              icon: 'none'
-            })
-            return
-          }
-
-          const latest = backupFiles[0]
-          const filePath = `${basePath.replace(/\/+$/, '')}/${latest.basename}`
-          const fileRes = await this.requestWebdavRaw('GET', filePath, {
-            headers: { Accept: 'application/json,text/plain,*/*' }
-          })
-          const fileCode = Number(fileRes?.statusCode || 0)
-          if (fileCode !== 200) {
-            throw new Error(`GET failed: ${fileCode}`)
-          }
-
-          uni.hideLoading()
-          try {
-            const text = typeof fileRes.data === 'string' ? fileRes.data : JSON.stringify(fileRes.data || {})
-            const data = JSON.parse(text)
-            this.processWebdavImport(data)
-          } catch (e) {
-            uni.showToast({
-              title: '数据格式错误',
-              icon: 'none'
-            })
-            console.error('解析 JSON 失败:', e)
-          }
-          return
-          // #endif
-
-          const result = await this.runWebdavWithFallback(async (client) => {
-            const basePath = this.webdavConfig.path || '/baby_records'
-            const clientBasePath = this.getWebdavClientPath(basePath)
-
-            // 检查目录是否存在
-            const exists = await client.exists(clientBasePath)
-            if (!exists) {
-              return { status: 'not_found' }
-            }
-
-            // 获取目录内容
-            const contents = await client.getDirectoryContents(clientBasePath)
-
-            // 筛选出备份文件
-            const backupFiles = contents
-              .filter(item => item.basename.startsWith('baby_records_backup_') && item.basename.endsWith('.json'))
-              .map(item => ({
-                href: item.href || item.filename,
-                basename: item.basename,
-                timestamp: this.extractTimestamp(item.basename)
-              }))
-
-            if (backupFiles.length === 0) {
-              return { status: 'empty' }
-            }
-
-            // 按时间戳降序排序，取最新的
-            backupFiles.sort((a, b) => b.timestamp - a.timestamp)
-
-            // 下载最新的文件
-            const latestFile = backupFiles[0]
-            const filePath = `${clientBasePath}/${latestFile.basename}`
-            const fileContent = await client.getFileContents(filePath, { format: 'text' })
-            return { status: 'ok', fileContent }
+          const [result, error] = await webdav.download({
+            config: this.webdavConfig
           })
 
           uni.hideLoading()
+
+          if (error) {
+            throw error
+          }
 
           if (result.status === 'not_found') {
             uni.showToast({
@@ -1294,32 +855,30 @@
             return
           }
 
-          // 解析并导入数据
-          try {
-            const data = JSON.parse(result.fileContent)
-            this.processWebdavImport(data)
-          } catch (e) {
-            uni.showToast({
-              title: '数据格式错误',
-              icon: 'none'
-            })
-            console.error('解析 JSON 失败:', e)
+          if (result.data) {
+            this.processWebdavImport(result.data)
+            return
           }
+
+          uni.showToast({
+            title: '下载失败',
+            icon: 'none'
+          })
         } catch (error) {
           uni.hideLoading()
           console.error('WebDAV 下载失败:', error)
 
+          const errorText = String(error?.message || '').toLowerCase()
           let errorMsg = '下载失败'
-          if (error.message) {
-            if (error.message.includes('401')) {
-              errorMsg = '认证失败'
-            } else if (error.message.includes('404')) {
-              errorMsg = '备份文件不存在'
-            } else if (error.message.includes('403')) {
-              errorMsg = '权限不足'
-            } else if (error.message.includes('timeout') || error.message.includes('network')) {
-              errorMsg = '网络连接失败'
-            }
+
+          if (errorText.includes('401')) {
+            errorMsg = '认证失败'
+          } else if (errorText.includes('404')) {
+            errorMsg = '备份文件不存在'
+          } else if (errorText.includes('403')) {
+            errorMsg = '权限不足'
+          } else if (errorText.includes('timeout') || errorText.includes('network')) {
+            errorMsg = '网络连接失败'
           }
 
           uni.showToast({
