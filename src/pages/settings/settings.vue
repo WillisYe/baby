@@ -134,7 +134,12 @@
 
 <script>
   import { getRecords, getBabyInfo, importRecords, setBabyInfo } from '@/utils/recordStore.js'
+  // #ifdef H5
   import { createClient } from "webdav";
+  // #endif
+  // #ifndef H5
+  import { AuthType, createClient } from "@/utils/webdav.js";
+  // #endif
 
   export default {
     data() {
@@ -564,10 +569,10 @@
        */
       getProxyUrl(url) {
         try {
-          const urlObj = new URL(url)
           // 判断是否在开发环境
           // #ifdef H5
           // 开发环境使用代理
+          const urlObj = new URL(url)
           if (import.meta.env.DEV || true) {
             return '/webdav' + urlObj.pathname
           } else {
@@ -654,12 +659,24 @@
         })
 
         try {
+          // #ifdef H5
+          let config = {
+            username: this.webdavConfig.username,
+            password: this.webdavConfig.password,
+          }
+          // #endif
+          // #ifndef H5
+          let config = {
+            // authType: AuthType.Digest,
+            authType: AuthType.Password,
+            username: this.webdavConfig.username,
+            password: this.webdavConfig.password,
+          }
+          // #endif
+
           const client = createClient(
             this.getProxyUrl(this.webdavConfig.url),
-            {
-              username: this.webdavConfig.username,
-              password: this.webdavConfig.password,
-            }
+            config
           );
 
           // 测试连接：获取目录内容
