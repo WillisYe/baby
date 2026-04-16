@@ -69,14 +69,14 @@
           <text v-if="currentTypeRecords.showChart && chartData.length > 0"
                 class="modal-chart-toggle"
                 @click="toggleChartType">
-            {{ chartType === 'bar' ? '📊' : '📈' }}
+            {{ chartType === 'bar' ? '📈' : '📊' }}
           </text>
         </view>
         <scroll-view class="modal-body" scroll-y>
           <!-- 图表区域 -->
           <view v-if="currentTypeRecords.showChart && chartData.length > 0" class="chart-container">
             <view class="chart-title">每日奶量趋势 (ml)</view>
-            <scroll-view class="chart-content scroll-view-x" scroll-x>
+            <scroll-view class="chart-content scroll-view-x" scroll-x :scroll-left="chartScrollLeft" @scroll="scroll">
               <!--  -->
               <view v-if="chartType === 'bar'" class="bar-chart" :style="{ width: chartData.length * 80 + 'rpx' }">
                 <view v-for="(item, index) in chartData" :key="index" class="bar-item">
@@ -154,6 +154,10 @@ export default {
       },
       chartType: 'bar', // 'bar' 或 'line'
       chartData: [], // 图表数据
+      old: {
+        scrollLeft: 0
+      },
+      chartScrollLeft: 0,
       babyInfo: {
         name: '宝宝',
         birthDate: '2025-01-13'
@@ -453,8 +457,15 @@ export default {
       // 设置图表数据
       this.chartData = chartData
       this.chartType = 'bar' // 默认显示柱状图
+      this.chartScrollLeft = chartData.length * 80
 
       this.showRecordModal = true
+      this.$nextTick(() => {
+        this.chartScrollLeft = chartData.length * 80
+        if (this.chartType === 'line') {
+          this.drawLineChart()
+        }
+      })
     },
 
     /**
@@ -571,7 +582,9 @@ export default {
      */
     toggleChartType() {
       this.chartType = this.chartType === 'bar' ? 'line' : 'bar'
+      this.chartScrollLeft = this.old.scrollLeft
       this.$nextTick(() => {
+        this.chartScrollLeft = this.chartData.length * 80
         if (this.chartType === 'line') {
           this.drawLineChart()
         }
@@ -718,7 +731,12 @@ export default {
           url: `/pages/record/record?tab=${config.eventType}`
         })
       }
-    }
+    },
+
+    scroll: function(e) {
+      console.log(e)
+      this.old.scrollLeft = e.detail.scrollLeft
+    },
   }
 }
 </script>
