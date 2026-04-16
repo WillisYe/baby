@@ -121,8 +121,11 @@
 
           <!-- 记录列表 -->
           <view class="record-group" v-for="(group, date) in currentTypeRecords.groupedRecords" :key="date">
-            <text class="group-title">{{ date }}</text>
-            <view class="group-records">
+            <view class="group-title" @click="toggleGroup(date)">
+              <text>{{ date }}</text>
+              <text class="expand-icon">{{ expandedGroups[date] ? '▼' : '▶' }}</text>
+            </view>
+            <view class="group-records" v-if="expandedGroups[date]">
               <view class="group-record-item" v-for="(record, index) in group" :key="index">
                 <text class="record-time-small">{{ record.time }}</text>
                 <text class="record-detail-small">{{ record.detail }}</text>
@@ -158,6 +161,7 @@ export default {
         scrollLeft: 0
       },
       chartScrollLeft: 0,
+      expandedGroups: {}, // 记录分组展开状态
       babyInfo: {
         name: '宝宝',
         birthDate: '2025-01-13'
@@ -459,6 +463,21 @@ export default {
       this.chartType = 'bar' // 默认显示柱状图
       this.chartScrollLeft = chartData.length * 80
 
+      // 初始化分组展开状态，默认展开最近一天
+      this.expandedGroups = {}
+      const dates = Object.keys(groupedRecords)
+      if (dates.length > 0) {
+        // 找到最近的日期（有记录的最晚日期）
+        const latestDate = dates.reduce((latest, current) => {
+          const latestTime = this.parseDateString(latest).getTime()
+          const currentTime = this.parseDateString(current).getTime()
+          return currentTime > latestTime ? current : latest
+        })
+        dates.forEach(date => {
+          this.expandedGroups[date] = date === latestDate
+        })
+      }
+
       this.showRecordModal = true
       this.$nextTick(() => {
         this.chartScrollLeft = chartData.length * 80
@@ -466,6 +485,13 @@ export default {
           this.drawLineChart()
         }
       })
+    },
+
+    /**
+     * 关闭记录详情弹窗
+     */
+    closeRecordModal() {
+      this.showRecordModal = false
     },
 
     /**
@@ -571,10 +597,28 @@ export default {
     },
 
     /**
-     * 关闭记录详情弹窗
+     * 解析日期字符串为Date对象
      */
-    closeRecordModal() {
-      this.showRecordModal = false
+    parseDateString(dateStr) {
+      const now = new Date()
+      if (dateStr === '今天') {
+        return new Date(now.getFullYear(), now.getMonth(), now.getDate())
+      } else if (dateStr === '昨天') {
+        const yesterday = new Date(now)
+        yesterday.setDate(yesterday.getDate() - 1)
+        return new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate())
+      } else {
+        // MM-DD格式
+        const [month, day] = dateStr.split('-').map(Number)
+        return new Date(now.getFullYear(), month - 1, day)
+      }
+    },
+
+    /**
+     * 切换分组展开状态
+     */
+    toggleGroup(date) {
+      this.$set(this.expandedGroups, date, !this.expandedGroups[date])
     },
 
     /**
@@ -1144,7 +1188,16 @@ export default {
   font-weight: 500;
   color: #333333;
   margin-bottom: 20rpx;
-  display: block;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+}
+
+.expand-icon {
+  font-size: 24rpx;
+  color: #999999;
+  transition: transform 0.2s ease;
 }
 
 .group-records {
