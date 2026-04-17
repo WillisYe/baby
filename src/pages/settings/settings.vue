@@ -79,6 +79,20 @@
       </view>
     </view>
 
+    <!-- #ifdef H5 -->
+    <!-- 应用下载 -->
+    <view class="settings-section">
+      <view class="section-title">应用下载</view>
+      <view class="setting-item" @click="downloadApp">
+        <text class="setting-label">下载 APK</text>
+        <view class="setting-value">
+          <text>获取最新版本</text>
+          <view class="arrow-icon">></view>
+        </view>
+      </view>
+    </view>
+    <!-- #endif -->
+
     <!-- 关于 -->
     <view class="settings-section" v-if="false">
       <view class="section-title">关于</view>
@@ -934,6 +948,27 @@
           })
           console.error('处理 WebDAV 导入失败:', e)
         }
+      },
+
+      /**
+       * 下载 APK 应用
+       */
+      downloadApp() {
+        const apkUrl = '/static/baby.apk'
+        uni.showModal({
+          title: '下载应用',
+          content: '确定要下载最新版本的APP吗？',
+          success: (res) => {
+            if (res.confirm) {
+              // 在浏览器中打开下载链接
+              window.open(apkUrl, '_blank')
+              uni.showToast({
+                title: '开始下载',
+                icon: 'success'
+              })
+            }
+          }
+        })
       }
     }
   }
