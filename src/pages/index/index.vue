@@ -196,6 +196,11 @@ export default {
           name: '药品',
           icon: '💊',
           eventType: 'medicine'
+        },
+        diaper: {
+          name: '尿片',
+          icon: '🩲',
+          eventType: 'diaper'
         }
       }
     }
@@ -235,6 +240,7 @@ export default {
 
     loadRecentRecords() {
       const allRecords = getRecords()
+      console.log('%c allRecords', 'color:red; background:yellow;', allRecords)
       const result = []
 
       // 遍历每个类型，获取最新的记录
@@ -271,6 +277,8 @@ export default {
           } else {
             if (latestRecord.valueName) {
               displayText += `(${latestRecord.valueName})`
+            } else if (latestRecord.note) {
+              displayText += `(${latestRecord.note})`
             }
           }
 

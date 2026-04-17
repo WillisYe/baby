@@ -281,7 +281,8 @@ export function getEventTypeLabel(eventType) {
     feeding: '喂养',
     stool: '大便',
     nutrition: '营养品',
-    medicine: '药品'
+    medicine: '药品',
+    diaper: '尿片'
   }
   return labels[eventType] || eventType
 }

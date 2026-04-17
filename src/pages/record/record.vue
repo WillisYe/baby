@@ -107,7 +107,8 @@ export default {
         { label: '喂养', value: 'feeding' },
         { label: '大便', value: 'stool' },
         { label: '营养品', value: 'nutrition' },
-        { label: '药品', value: 'medicine' }
+        { label: '药品', value: 'medicine' },
+        { label: '尿片', value: 'diaper' }
       ],
       feedingTypes: [
         { label: '配方奶', value: 'formula' },
