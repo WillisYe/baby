@@ -67,13 +67,28 @@ export function addRecord(record) {
     const records = getRecords()
     const babyInfo = getBabyInfo()
 
+    // 解析用户选择的时间
+    let eventTime = Date.now() / 1000
+    let dateString = formatDate(new Date())
+    if (record.date && record.time) {
+      dateString = record.date
+      const dateTimeStr = `${record.date} ${record.time}:00`
+      eventTime = new Date(dateTimeStr).getTime() / 1000
+    } else if (record.time) {
+      // 兼容旧格式，只有时分
+      const [hours, minutes] = record.time.split(':').map(Number)
+      const now = new Date()
+      now.setHours(hours, minutes, 0, 0)
+      eventTime = now.getTime() / 1000
+    }
+
     // 构建符合新数据结构的记录
     const newRecord = {
       babyHashid: babyInfo.babyHashid || generateHashId(),
       name: babyInfo.name,
-      dateString: formatDate(new Date()),
+      dateString: dateString,
       eventType: record.eventType,
-      eventTime: (Date.now() / 1000).toFixed(1),
+      eventTime: eventTime.toFixed(1),
       valueName: record.valueName,
       value: record.value || '',
       note: record.note || '',

@@ -77,9 +77,9 @@
       <view class="common-fields">
         <view class="form-item">
           <text class="label">时间</text>
-          <picker mode="time" :value="form.time" @change="onTimeChange">
+          <picker mode="multiSelector" :range="timeRange" :value="form.time" @change="onTimeChange">
             <view class="picker-content">
-              <text :class="{'placeholder': !form.time}">{{ form.time || '请选择时间' }}</text>
+              <text :class="{'placeholder': !form.time}">{{ selectedTimeText || '请选择时间' }}</text>
             </view>
           </picker>
         </view>
@@ -127,18 +127,41 @@ export default {
         { label: '红色', value: '5' },
         { label: '白色', value: '6' },
       ],
+      multiSelectorData: {
+        dates: (() => {
+          const dates = []
+          const today = new Date()
+          for (let i = 0; i < 30; i++) {
+            const date = new Date(today)
+            date.setDate(today.getDate() - i)
+            const month = date.getMonth() + 1
+            const day = date.getDate()
+            const weekday = ['日', '一', '二', '三', '四', '五', '六'][date.getDay()]
+            const label = `${month}月${day}日周${weekday}`
+            const value = date.toISOString().split('T')[0]
+            dates.push({ label, value })
+          }
+          return dates
+        })(),
+        hours: Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0')),
+        minutes: Array.from({ length: 60 }, (_, i) => i.toString().padStart(2, '0'))
+      },
       form: {
         feedingType: 'formula',
         stoolType: '2',
         stoolColor: '2',
         valueName: '',
         value: '',
-        time: new Date().toLocaleTimeString().substring(0, 5),
+        time: [0, 0, 0], // [dateIndex, hour, minute] 将在onLoad中设置
         note: ''
       }
     }
   },
   onLoad(options) {
+    // 设置默认时间
+    const now = new Date()
+    this.form.time = [0, now.getHours(), now.getMinutes()]
+
     // 如果有tab参数，设置当前tab并隐藏tab栏
     if (options.tab) {
       this.currentTab = options.tab
@@ -150,10 +173,26 @@ export default {
       }
     }
   },
+  computed: {
+    timeRange() {
+      return [
+        this.multiSelectorData.dates.map(d => d.label),
+        this.multiSelectorData.hours,
+        this.multiSelectorData.minutes
+      ]
+    },
+    selectedTimeText() {
+      if (!this.multiSelectorData.dates.length || !this.form.time) return ''
+      const dateLabel = this.multiSelectorData.dates[this.form.time[0]].label
+      const hour = this.form.time[1].toString().padStart(2, '0')
+      const minute = this.form.time[2].toString().padStart(2, '0')
+      return `${dateLabel} ${hour}:${minute}`
+    }
+  },
   methods: {
     validateForm() {
       // 时间校验 - 所有类型都需要
-      if (!this.form.time || this.form.time.trim() === '') {
+      if (!this.form.time || this.form.time.length !== 3) {
         uni.showToast({
           title: '请选择时间',
           icon: 'none'
@@ -223,24 +262,14 @@ export default {
       return true
     },
 
-    submitRecord() {
-      // 表单校验
-      if (!this.validateForm()) {
-        return
-      }
+    isFutureTime(selectedDate, selectedTime) {
+      const [year, month, day] = selectedDate.split('-').map(Number)
+      const [hour, minute] = selectedTime.split(':').map(Number)
+      const selectedDateTime = new Date(year, month - 1, day, hour, minute, 0)
+      return selectedDateTime.getTime() > Date.now()
+    },
 
-      // 构建记录对象
-      const record = {
-        eventType: this.currentTab,
-        valueName: this.getValueName(),
-        value: this.form.value,
-        time: this.form.time,
-        note: this.form.note,
-      }
-
-      record.type = this.currentTab === 'feeding' ? this.form.feedingType : this.currentTab
-
-      // 保存到全局存储
+    doSubmitRecord(record) {
       const result = addRecord(record)
 
       if (result) {
@@ -268,6 +297,45 @@ export default {
         })
       }
     },
+
+    submitRecord() {
+      // 表单校验
+      if (!this.validateForm()) {
+        return
+      }
+
+      // 构建记录对象
+      const selectedDate = this.multiSelectorData.dates[this.form.time[0]].value
+      const selectedTime = `${this.form.time[1].toString().padStart(2, '0')}:${this.form.time[2].toString().padStart(2, '0')}`
+      const record = {
+        eventType: this.currentTab,
+        valueName: this.getValueName(),
+        value: this.form.value,
+        date: selectedDate,
+        time: selectedTime,
+        note: this.form.note,
+      }
+
+      record.type = this.currentTab === 'feeding' ? this.form.feedingType : this.currentTab
+
+      if (this.isFutureTime(selectedDate, selectedTime)) {
+        uni.showModal({
+          title: '提示',
+          content: '选择时间大于当前时间，确定保存么？',
+          showCancel: true,
+          cancelText: '取消',
+          confirmText: '确定',
+          success: (res) => {
+            if (res.confirm) {
+              this.doSubmitRecord(record)
+            }
+          }
+        })
+        return
+      }
+
+      this.doSubmitRecord(record)
+    },
     resetForm() {
       this.form = {
         feedingType: 'formula',
@@ -275,7 +343,7 @@ export default {
         stoolColor: '2',
         valueName: '',
         value: '',
-        time: new Date().toLocaleTimeString().substring(0, 5),
+        time: [0, new Date().getHours(), new Date().getMinutes()], // [dateIndex, hour, minute]
         note: ''
       }
     },
