@@ -45,12 +45,6 @@ function getValBorders (selector) {
 }
 
 export default defineConfig({
-  cli: {
-    entry: {
-      patterns: './src/**/*.{vue,nvue}',
-      outFile: './src/static/uno.css'
-    },
-  },
   presets: [
     presetUno({
       preflight: true,
