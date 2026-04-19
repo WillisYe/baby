@@ -124,6 +124,19 @@
         </view>
       </view>
 
+      <!-- 尿布记录 -->
+      <view v-if="currentTab === 'diaper'" class="form-section">
+        <view class="form-item">
+          <text class="label">尿布状态</text>
+          <view class="radio-group">
+            <label class="radio-item" v-for="level in diaperLevels" :key="level.value">
+              <radio :value="level.value" :checked="form.diaperFullness === level.value" @click="form.diaperFullness = level.value" />
+              <text>{{ level.label }}</text>
+            </label>
+          </view>
+        </view>
+      </view>
+
       <!-- 共用字段 -->
       <view class="common-fields">
         <view class="form-item">
@@ -178,6 +191,10 @@ export default {
         { label: '红色', value: '5' },
         { label: '白色', value: '6' },
       ],
+      diaperLevels: [
+        { label: '一般', value: 'normal' },
+        { label: '特别满', value: 'full' },
+      ],
       multiSelectorData: {
         dates: (() => {
           const dates = []
@@ -205,6 +222,7 @@ export default {
         feedingType: 'formula',
         stoolType: '2',
         stoolColor: '2',
+        diaperFullness: 'normal',
         valueName: '',
         value: '',
         time: [0, 0, 0], // [dateIndex, hour, minute] 将在onLoad中设置
@@ -315,6 +333,17 @@ export default {
         if (!this.form.valueName || this.form.valueName.trim() === '') {
           uni.showToast({
             title: '请输入药品名称',
+            icon: 'none'
+          })
+          return false
+        }
+      }
+
+      // 尿布记录校验
+      if (this.currentTab === 'diaper') {
+        if (!this.form.diaperFullness) {
+          uni.showToast({
+            title: '请选择尿布状态',
             icon: 'none'
           })
           return false
@@ -462,7 +491,9 @@ export default {
         let type = this.stoolTypes.find(item => item.value === this.form.stoolType);
         let color = this.stoolColors.find(item => item.value === this.form.stoolColor);
         return `${type.label} ${color.label}`;
-
+      } else if (this.currentTab === 'diaper') {
+        const level = this.diaperLevels.find(item => item.value === this.form.diaperFullness)
+        return level ? level.label : ''
       }
       return this.form.valueName
     },

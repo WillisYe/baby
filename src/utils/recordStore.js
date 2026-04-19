@@ -302,6 +302,8 @@ export function formatRecordDetail(record) {
       return record.valueName || ''
     case 'medicine':
       return record.valueName || ''
+    case 'diaper':
+      return record.valueName || record.note || ''
     default:
       return record.note || ''
   }
