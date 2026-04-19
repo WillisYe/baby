@@ -29,8 +29,25 @@
         <view class="form-item">
           <text class="label">数量</text>
           <view class="input-group">
-            <input type="number" v-model="form.value" placeholder="请输入数量" />
+            <input
+              type="number"
+              v-model="form.value"
+              placeholder="请输入数量"
+              @focus="showSuggestions('feeding')"
+              @input="onSuggestionInput('feeding')"
+              @blur="hideSuggestionsWithDelay"
+            />
             <text class="unit">ml</text>
+          </view>
+          <view v-if="suggestionVisible && suggestionField === 'feeding' && filteredSuggestions.length" class="suggestion-list">
+            <view
+              v-for="item in filteredSuggestions"
+              :key="item"
+              class="suggestion-item"
+              @tap.prevent="applySuggestion(item)"
+            >
+              {{ item }}
+            </view>
           </view>
         </view>
       </view>
@@ -61,7 +78,24 @@
       <view v-if="currentTab === 'nutrition'" class="form-section">
         <view class="form-item">
           <text class="label">营养品名称</text>
-          <input type="text" v-model="form.valueName" placeholder="请输入营养品名称" />
+          <input
+            type="text"
+            v-model="form.valueName"
+            placeholder="请输入营养品名称"
+            @focus="showSuggestions('nutrition')"
+            @input="onSuggestionInput('nutrition')"
+            @blur="hideSuggestionsWithDelay"
+          />
+          <view v-if="suggestionVisible && suggestionField === 'nutrition' && filteredSuggestions.length" class="suggestion-list">
+            <view
+              v-for="item in filteredSuggestions"
+              :key="item"
+              class="suggestion-item"
+              @tap.prevent="applySuggestion(item)"
+            >
+              {{ item }}
+            </view>
+          </view>
         </view>
       </view>
 
@@ -69,7 +103,24 @@
       <view v-if="currentTab === 'medicine'" class="form-section">
         <view class="form-item">
           <text class="label">药品名称</text>
-          <input type="text" v-model="form.valueName" placeholder="请输入药品名称" />
+          <input
+            type="text"
+            v-model="form.valueName"
+            placeholder="请输入药品名称"
+            @focus="showSuggestions('medicine')"
+            @input="onSuggestionInput('medicine')"
+            @blur="hideSuggestionsWithDelay"
+          />
+          <view v-if="suggestionVisible && suggestionField === 'medicine' && filteredSuggestions.length" class="suggestion-list">
+            <view
+              v-for="item in filteredSuggestions"
+              :key="item"
+              class="suggestion-item"
+              @tap.prevent="applySuggestion(item)"
+            >
+              {{ item }}
+            </view>
+          </view>
         </view>
       </view>
 
@@ -96,7 +147,7 @@
 </template>
 
 <script>
-import { addRecord } from '@/utils/recordStore.js'
+import { addRecord, getDistinctFieldValues } from '@/utils/recordStore.js'
 
 export default {
   data() {
@@ -146,6 +197,10 @@ export default {
         hours: Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0')),
         minutes: Array.from({ length: 60 }, (_, i) => i.toString().padStart(2, '0'))
       },
+      suggestionVisible: false,
+      suggestionField: '',
+      suggestionQuery: '',
+      suggestionItems: [],
       form: {
         feedingType: 'formula',
         stoolType: '2',
@@ -187,6 +242,13 @@ export default {
       const hour = this.form.time[1].toString().padStart(2, '0')
       const minute = this.form.time[2].toString().padStart(2, '0')
       return `${dateLabel} ${hour}:${minute}`
+    },
+    filteredSuggestions() {
+      if (!this.suggestionVisible || !this.suggestionItems.length) return []
+      const query = this.suggestionQuery ? this.suggestionQuery.toString().toLowerCase() : ''
+      return this.suggestionItems
+        .filter(item => item.toString().toLowerCase().includes(query))
+        .slice(0, 10)
     }
   },
   methods: {
@@ -267,6 +329,52 @@ export default {
       const [hour, minute] = selectedTime.split(':').map(Number)
       const selectedDateTime = new Date(year, month - 1, day, hour, minute, 0)
       return selectedDateTime.getTime() > Date.now()
+    },
+
+    getSuggestionValues(field) {
+      if (field === 'nutrition') {
+        return getDistinctFieldValues('nutrition', 'valueName')
+      }
+      if (field === 'medicine') {
+        return getDistinctFieldValues('medicine', 'valueName')
+      }
+      if (field === 'feeding') {
+        return getDistinctFieldValues('feeding', 'value').map(v => v.toString())
+      }
+      return []
+    },
+
+    showSuggestions(field) {
+      this.suggestionField = field
+      this.suggestionQuery = field === 'feeding' ? this.form.value.toString() : this.form.valueName
+      this.suggestionItems = this.getSuggestionValues(field)
+      this.suggestionVisible = this.suggestionItems.length > 0
+    },
+
+    onSuggestionInput(field) {
+      this.suggestionField = field
+      this.suggestionQuery = field === 'feeding' ? this.form.value.toString() : this.form.valueName
+      this.suggestionItems = this.getSuggestionValues(field)
+      this.suggestionVisible = this.suggestionItems.length > 0
+    },
+
+    hideSuggestions() {
+      this.suggestionVisible = false
+    },
+
+    hideSuggestionsWithDelay() {
+      setTimeout(() => {
+        this.hideSuggestions()
+      }, 200)
+    },
+
+    applySuggestion(item) {
+      if (this.suggestionField === 'feeding') {
+        this.form.value = item
+      } else {
+        this.form.valueName = item
+      }
+      this.hideSuggestions()
     },
 
     doSubmitRecord(record) {
@@ -367,6 +475,33 @@ export default {
 </script>
 
 <style>
+.form-item {
+  position: relative;
+}
+.suggestion-list {
+  position: absolute;
+  top: calc(100% + 10rpx);
+  left: 0;
+  right: 0;
+  z-index: 10;
+  background-color: #ffffff;
+  border: 1rpx solid #e0e0e0;
+  border-radius: 5rpx;
+  overflow: hidden;
+  max-height: 280rpx;
+}
+.suggestion-item {
+  padding: 18rpx 20rpx;
+  font-size: 26rpx;
+  color: #333333;
+  border-bottom: 1rpx solid #f0f0f0;
+}
+.suggestion-item:last-child {
+  border-bottom: none;
+}
+.suggestion-item:hover {
+  background-color: #f5f5f5;
+}
 .content {
   padding: 20rpx;
   background-color: #f5f5f5;

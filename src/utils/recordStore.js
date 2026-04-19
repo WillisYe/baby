@@ -128,6 +128,27 @@ export function getRecordsByType(type) {
 }
 
 /**
+ * 获取指定类型记录中的唯一字段值，按最近记录顺序返回
+ * @param {String} type - 记录类型 (feeding/stool/nutrition/medicine)
+ * @param {String} field - 字段名称
+ * @returns {Array} 唯一值列表
+ */
+export function getDistinctFieldValues(type, field) {
+  const records = getRecords()
+  const seen = new Set()
+  const values = []
+  for (const record of records) {
+    if (record.eventType !== type) continue
+    if (!record[field]) continue
+    const value = record[field].toString()
+    if (seen.has(value)) continue
+    seen.add(value)
+    values.push(value)
+  }
+  return values
+}
+
+/**
  * 删除记录
  * @param {String} recordHashid - 记录hashid
  */
