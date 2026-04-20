@@ -1,4 +1,4 @@
-{
+const updateJson = {
   "statusCode": 200,
   "data": {
     "wgtUrl": 200,

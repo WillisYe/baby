@@ -1,6 +1,6 @@
 const UPDATE_CONFIG = {
   // TODO: 替换为实际热更新配置地址
-  checkUrl: 'https://example.com/app-update.json'
+  checkUrl: 'https://baby-3qp.pages.dev/static/h5/app-update.js'
 }
 
 function isAppPlus() {
@@ -43,6 +43,7 @@ function fetchUpdateInfo() {
       dataType: 'json',
       timeout: 15000,
       success: (res) => {
+        console.log('%c res', 'color:red; background:yellow;', res)
         if (res.statusCode >= 200 && res.statusCode < 300 && res.data) {
           resolve(res.data)
         } else {
