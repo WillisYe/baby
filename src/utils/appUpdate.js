@@ -1,6 +1,6 @@
 const UPDATE_CONFIG = {
   // TODO: 替换为实际热更新配置地址
-  checkUrl: 'https://baby-3qp.pages.dev/static/h5/app-update.js'
+  checkUrl: 'https://baby-3qp.pages.dev/static/h5/app-update.json'
 }
 
 function isAppPlus() {
