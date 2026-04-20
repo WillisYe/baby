@@ -79,6 +79,17 @@
       </view>
     </view>
 
+    <view class="settings-section" v-if="isAppPlus || true">
+      <view class="section-title">应用更新</view>
+      <view class="setting-item" @click="checkAppUpdate">
+        <text class="setting-label">检查热更新</text>
+        <view class="setting-value">
+          <text>APP 内下载安装</text>
+          <view class="arrow-icon">></view>
+        </view>
+      </view>
+    </view>
+
     <!-- #ifdef H5 -->
     <!-- 应用下载 -->
     <view class="settings-section">
@@ -149,6 +160,7 @@
 <script>
   import { getRecords, getBabyInfo, importRecords, setBabyInfo } from '@/utils/recordStore.js'
   import webdav from '@/utils/webdavService.js'
+  import { checkAppHotUpdate } from '@/utils/appUpdate.js'
 
   export default {
     data() {
@@ -177,6 +189,14 @@
     computed: {
       webdavConfigured() {
         return this.webdavConfig.url && this.webdavConfig.username
+      },
+      isAppPlus() {
+        // #ifdef APP-PLUS
+        return true
+        // #endif
+        // #ifndef APP-PLUS
+        return false
+        // #endif
       }
     },
     onLoad() {
@@ -570,6 +590,10 @@
           title: '关于应用',
           icon: 'none'
         });
+      },
+
+      async checkAppUpdate() {
+        await checkAppHotUpdate({ manual: true })
       },
 
       buildWebdavExportPayload() {
