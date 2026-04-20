@@ -41,6 +41,7 @@ function fetchUpdateInfo() {
       timeout: 15000,
       success: (res) => {
         if (res.statusCode >= 200 && res.statusCode < 300 && res.data) {
+          console.log('%c res', 'color:red; background:yellow;', res)
           // 解析 HTML 中的 data-version 属性
           const html = res.data
           const versionMatch = html.match(/<html[^>]*data-version="([^"]+)"/)

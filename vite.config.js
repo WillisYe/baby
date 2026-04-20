@@ -23,22 +23,20 @@ export default defineConfig({
           copyFileSync(redirectsSrc, redirectsDest)
           console.log('Copied _redirects to build output')
         }
-
+      },
+      transformIndexHtml(html) {
         // Inject version into index.html
         const manifestPath = resolve(__dirname, 'src/manifest.json')
-        const indexPath = resolve(__dirname, 'dist/build/h5/index.html')
-
-        if (existsSync(manifestPath) && existsSync(indexPath)) {
+        if (existsSync(manifestPath)) {
           const manifestContent = readFileSync(manifestPath, 'utf-8')
           const versionMatch = manifestContent.match(/"versionName"\s*:\s*"([^"]+)"/)
           if (versionMatch) {
             const versionName = versionMatch[1]
-            let indexHtml = readFileSync(indexPath, 'utf-8')
-            indexHtml = indexHtml.replace('<html lang="en">', `<html lang="en" data-version="${versionName}">`)
-            writeFileSync(indexPath, indexHtml)
+            html = html.replace('<html lang="en">', `<html lang="en" data-version="${versionName}">`)
             console.log(`Injected version ${versionName} into index.html`)
           }
         }
+        return html
       }
     }
   ],
