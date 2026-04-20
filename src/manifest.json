@@ -104,9 +104,9 @@
             "splashscreen" : {
                 "androidStyle" : "default",
                 "android" : {
-                    "hdpi" : "C:/Users/meiya/Desktop/np1.png",
-                    "xhdpi" : "C:/Users/meiya/Desktop/np1.png",
-                    "xxhdpi" : "C:/Users/meiya/Desktop/np1.png"
+                    "hdpi" : "unpackage/res/p1.png",
+                    "xhdpi" : "unpackage/res/p1.png",
+                    "xxhdpi" : "unpackage/res/p1.png"
                 }
             }
         }
