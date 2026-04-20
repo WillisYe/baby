@@ -47,14 +47,16 @@ export default defineConfig({
           }
         }
 
-        // Copy .wgt to .wgt.apk so Cloudflare Pages treats it as downloadable APK-like resource
+        // Copy .wgt to .wgt.apk and .apk so Cloudflare Pages can serve it as a downloadable asset
         const sourceWgt = resolve(__dirname, 'src/static/h5/__UNI__F1A388D.wgt')
         const targetWgt = resolve(versionDir, '__UNI__F1A388D.wgt.apk')
+        const targetApk = resolve(versionDir, '__UNI__F1A388D.apk')
         if (existsSync(sourceWgt)) {
           copyFileSync(sourceWgt, targetWgt)
-          console.log('Created __UNI__F1A388D.wgt.apk from source __UNI__F1A388D.wgt')
+          copyFileSync(sourceWgt, targetApk)
+          console.log('Created __UNI__F1A388D.wgt.apk and __UNI__F1A388D.apk from source __UNI__F1A388D.wgt')
         } else {
-          console.log('Source WGT not found, skipping __UNI__F1A388D.wgt.apk copy')
+          console.log('Source WGT not found, skipping __UNI__F1A388D.wgt.apk / __UNI__F1A388D.apk copy')
         }
       },
       transformIndexHtml(html) {

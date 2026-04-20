@@ -7,6 +7,7 @@ const h5StaticDir = path.resolve(rootDir, 'src', 'static', 'h5')
 const versionFilePath = path.resolve(h5StaticDir, 'app_version.txt.apk')
 const sourceWgtPath = path.resolve(h5StaticDir, '__UNI__F1A388D.wgt')
 const targetWgtPath = path.resolve(h5StaticDir, '__UNI__F1A388D.wgt.apk')
+const targetApkPath = path.resolve(h5StaticDir, '__UNI__F1A388D.apk')
 
 if (!fs.existsSync(manifestPath)) {
   throw new Error(`manifest.json not found: ${manifestPath}`)
@@ -33,3 +34,6 @@ if (!fs.existsSync(sourceWgtPath)) {
 
 fs.copyFileSync(sourceWgtPath, targetWgtPath)
 console.log(`Copied ${path.relative(rootDir, sourceWgtPath)} to ${path.relative(rootDir, targetWgtPath)}`)
+
+fs.copyFileSync(sourceWgtPath, targetApkPath)
+console.log(`Copied ${path.relative(rootDir, sourceWgtPath)} to ${path.relative(rootDir, targetApkPath)}`)
