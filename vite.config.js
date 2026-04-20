@@ -23,6 +23,12 @@ export default defineConfig({
           copyFileSync(redirectsSrc, redirectsDest)
           console.log('Copied _redirects to build output')
         }
+
+        // Create 404.html to disable SPA mode in Cloudflare Pages
+        const notFoundPath = resolve(__dirname, 'dist/build/h5/404.html')
+        const notFoundContent = '<!DOCTYPE html><html><head><title>404 Not Found</title></head><body><h1>404 Not Found</h1></body></html>'
+        writeFileSync(notFoundPath, notFoundContent)
+        console.log('Created 404.html to disable SPA mode')
       },
       transformIndexHtml(html) {
         // Inject version into index.html
