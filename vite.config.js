@@ -24,11 +24,13 @@ export default defineConfig({
           console.log('Copied _redirects to build output')
         }
 
-        // Create 404.html to disable SPA mode in Cloudflare Pages
-        const notFoundPath = resolve(__dirname, 'dist/build/h5/404.html')
-        const notFoundContent = '<!DOCTYPE html><html><head><title>404 Not Found</title></head><body><h1>404 Not Found</h1></body></html>'
-        writeFileSync(notFoundPath, notFoundContent)
-        console.log('Created 404.html to disable SPA mode')
+        // Create _headers to set MIME type for .wgt files
+        const headersPath = resolve(__dirname, 'dist/build/h5/_headers')
+        const headersContent = `/*.wgt
+  Content-Type: application/octet-stream
+`
+        writeFileSync(headersPath, headersContent)
+        console.log('Created _headers for .wgt files')
       },
       transformIndexHtml(html) {
         // Inject version into index.html
