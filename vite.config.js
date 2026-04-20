@@ -24,11 +24,13 @@ export default defineConfig({
           console.log('Copied _redirects to build output')
         }
 
-        // Create _headers to set MIME type for .wgt files
-        const headersPath = resolve(__dirname, 'dist/build/h5/_headers')
-        const headersContent = `/*.wgt\n  Content-Type: application/octet-stream\n`
-        writeFileSync(headersPath, headersContent)
-        console.log('Created _headers for .wgt files')
+        // Copy _headers from public to build output
+        const headersSrc = resolve(__dirname, 'public/_headers')
+        const headersDest = resolve(__dirname, 'dist/build/h5/_headers')
+        if (existsSync(headersSrc)) {
+          copyFileSync(headersSrc, headersDest)
+          console.log('Copied _headers to build output')
+        }
 
         // Generate version marker file for app hot update
         const manifestPath = resolve(__dirname, 'src/manifest.json')
