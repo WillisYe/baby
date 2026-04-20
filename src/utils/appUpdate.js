@@ -1,8 +1,8 @@
 const UPDATE_CONFIG = {
-  // 热更新包固定地址
-  wgtUrl: 'https://baby-3qp.pages.dev/static/h5/__UNI__F1A388D.wgt',
-  // H5 首页地址，用于获取版本信息
-  h5IndexUrl: 'https://baby-3qp.pages.dev/index.html'
+  // 热更新包固定地址（使用 .apk 后缀避免 Cloudflare Pages 将 .wgt 识别为网页资源）
+  wgtUrl: 'https://baby-3qp.pages.dev/static/h5/__UNI__F1A388D.wgt.apk',
+  // 版本信息文件地址
+  versionFileUrl: 'https://baby-3qp.pages.dev/static/h5/app_version.txt.apk'
 }
 
 function isAppPlus() {
@@ -35,18 +35,14 @@ function getCurrentVersionInfo() {
 function fetchUpdateInfo() {
   return new Promise((resolve, reject) => {
     uni.request({
-      url: UPDATE_CONFIG.h5IndexUrl,
+      url: UPDATE_CONFIG.versionFileUrl,
       method: 'GET',
       dataType: 'text',
       timeout: 15000,
       success: (res) => {
         if (res.statusCode >= 200 && res.statusCode < 300 && res.data) {
-          console.log('%c res', 'color:red; background:yellow;', res)
-          // 解析 HTML 中的 data-version 属性
-          const html = res.data
-          const versionMatch = html.match(/<html[^>]*data-version="([^"]+)"/)
-          if (versionMatch) {
-            const remoteVersionName = versionMatch[1]
+          const remoteVersionName = String(res.data).trim()
+          if (remoteVersionName) {
             resolve({
               versionName: remoteVersionName,
               versionCode: parseInt(remoteVersionName.replace(/\./g, ''), 10) || 0,
@@ -54,7 +50,7 @@ function fetchUpdateInfo() {
               changelog: '新版本更新'
             })
           } else {
-            reject(new Error('无法解析远程版本信息'))
+            reject(new Error('版本文件内容为空'))
           }
         } else {
           reject(new Error(`获取版本信息失败: 状态 ${res.statusCode}`))
