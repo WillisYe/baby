@@ -1,6 +1,8 @@
 const UPDATE_CONFIG = {
-  // TODO: 替换为实际热更新配置地址
-  checkUrl: 'https://baby-3qp.pages.dev/static/h5/app-update.json'
+  // 热更新包固定地址
+  wgtUrl: 'https://baby-3qp.pages.dev/static/h5/__UNI__F1A388D.wgt',
+  // H5 首页地址，用于获取版本信息
+  h5IndexUrl: 'https://baby-3qp.pages.dev/index.html'
 }
 
 function isAppPlus() {
@@ -32,26 +34,33 @@ function getCurrentVersionInfo() {
 
 function fetchUpdateInfo() {
   return new Promise((resolve, reject) => {
-    if (!UPDATE_CONFIG.checkUrl) {
-      reject(new Error('未配置热更新检查地址'))
-      return
-    }
-
     uni.request({
-      url: UPDATE_CONFIG.checkUrl,
+      url: UPDATE_CONFIG.h5IndexUrl,
       method: 'GET',
-      dataType: 'json',
+      dataType: 'text',
       timeout: 15000,
       success: (res) => {
-        console.log('%c res', 'color:red; background:yellow;', res)
         if (res.statusCode >= 200 && res.statusCode < 300 && res.data) {
-          resolve(res.data)
+          // 解析 HTML 中的 data-version 属性
+          const html = res.data
+          const versionMatch = html.match(/<html[^>]*data-version="([^"]+)"/)
+          if (versionMatch) {
+            const remoteVersionName = versionMatch[1]
+            resolve({
+              versionName: remoteVersionName,
+              versionCode: parseInt(remoteVersionName.replace(/\./g, ''), 10) || 0,
+              wgtUrl: UPDATE_CONFIG.wgtUrl,
+              changelog: '新版本更新'
+            })
+          } else {
+            reject(new Error('无法解析远程版本信息'))
+          }
         } else {
-          reject(new Error(`检查更新失败: 状态 ${res.statusCode}`))
+          reject(new Error(`获取版本信息失败: 状态 ${res.statusCode}`))
         }
       },
       fail: (err) => {
-        reject(new Error(`检查更新失败: ${err.errMsg || err.message || '网络错误'}`))
+        reject(new Error(`获取版本信息失败: ${err.errMsg || err.message || '网络错误'}`))
       }
     })
   })
