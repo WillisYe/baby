@@ -1,9 +1,9 @@
 {
     "name" : "宝宝生活记录",
-    "appid" : "__UNI__F1A388D",
+    "appid" : "__UNI__E9B6D54",
     "description" : "",
-    "versionName" : "1.0.1",
-    "versionCode" : "2026041901",
+    "versionName" : "1.0.2",
+    "versionCode" : "2026042002",
     "transformPx" : false,
     /* 5+App特有相关 */
     "app-plus" : {

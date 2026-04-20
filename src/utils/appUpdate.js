@@ -1,6 +1,6 @@
 const UPDATE_CONFIG = {
   // 热更新包地址
-  wgtUrl: 'https://baby-3qp.pages.dev/static/h5/__UNI__F1A388D.wgt',
+  wgtUrl: 'https://baby-3qp.pages.dev/static/h5/__UNI__E9B6D54.wgt',
   // 版本信息地址
   versionUrl: 'https://baby-3qp.pages.dev/static/h5/app_version.txt'
 }

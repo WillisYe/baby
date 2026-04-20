@@ -26,7 +26,7 @@ export default defineConfig({
           }
 
           // 复制版本文件和 WGT 文件
-          const files = ['app_version.txt', '__UNI__F1A388D.wgt']
+          const files = ['app_version.txt', '__UNI__E9B6D54.wgt']
           files.forEach(file => {
             const srcPath = path.join(staticDir, file)
             const destPath = path.join(outputDir, file)
