@@ -1,6 +1,8 @@
 const UPDATE_CONFIG = {
-  // TODO: 替换为实际热更新配置地址
-  checkUrl: 'https://example.com/app-update.json'
+  // 热更新包地址
+  wgtUrl: 'https://baby-3qp.pages.dev/static/h5/__UNI__F1A388D.wgt',
+  // 版本信息地址
+  versionUrl: 'https://baby-3qp.pages.dev/static/h5/app_version.txt'
 }
 
 function isAppPlus() {
@@ -32,19 +34,24 @@ function getCurrentVersionInfo() {
 
 function fetchUpdateInfo() {
   return new Promise((resolve, reject) => {
-    if (!UPDATE_CONFIG.checkUrl) {
-      reject(new Error('未配置热更新检查地址'))
+    if (!UPDATE_CONFIG.versionUrl) {
+      reject(new Error('未配置版本信息地址'))
       return
     }
 
     uni.request({
-      url: UPDATE_CONFIG.checkUrl,
+      url: UPDATE_CONFIG.versionUrl,
       method: 'GET',
-      dataType: 'json',
+      dataType: 'text',
       timeout: 15000,
       success: (res) => {
         if (res.statusCode >= 200 && res.statusCode < 300 && res.data) {
-          resolve(res.data)
+          const versionName = res.data.trim()
+          resolve({
+            versionName,
+            versionCode: 1, // 简单处理，实际可根据需要解析
+            wgtUrl: UPDATE_CONFIG.wgtUrl
+          })
         } else {
           reject(new Error(`检查更新失败: 状态 ${res.statusCode}`))
         }

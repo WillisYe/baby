@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "scripts": {
     "serve": "run-p dev:h5 build:unocss:watch",
-    "build": "uni build",
+    "build": "node ./scripts/generate-h5-assets.js && uni build",
     "prebuild": "unocss \"src/**/*.vue\" -o src/static/uno.css",
     "dev:custom": "uni -p",
     "dev:h5": "uni",
