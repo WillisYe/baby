@@ -32,6 +32,14 @@ export default defineConfig({
           console.log('Copied _headers to build output')
         }
 
+        // Copy 404.html from public to build output so Pages does not force SPA fallback
+        const notFoundSrc = resolve(__dirname, 'public/404.html')
+        const notFoundDest = resolve(__dirname, 'dist/build/h5/404.html')
+        if (existsSync(notFoundSrc)) {
+          copyFileSync(notFoundSrc, notFoundDest)
+          console.log('Copied 404.html to build output')
+        }
+
         // Generate version marker file for app hot update
         const manifestPath = resolve(__dirname, 'src/manifest.json')
         const versionDir = resolve(__dirname, 'dist/build/h5/static/h5')

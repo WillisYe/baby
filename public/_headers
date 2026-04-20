@@ -1,6 +1,10 @@
 /static/h5/__UNI__F1A388D.wgt.apk
   Content-Type: application/octet-stream
+/static/h5/__UNI__F1A388D.apk
+  Content-Type: application/octet-stream
 /static/h5/app_version.txt.apk
+  Content-Type: application/octet-stream
+/static/h5/*.wgt
   Content-Type: application/octet-stream
 /static/h5/*.apk
   Content-Type: application/octet-stream
