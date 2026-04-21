@@ -193,8 +193,10 @@
       }
     },
     async onShow() {
+      // #ifdef APP-plus
       this.currentInfo = await getCurrentVersionInfo()
       checkAppHotUpdate()
+      // #endif
     },
     methods: {
       editName() {

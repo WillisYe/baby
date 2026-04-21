@@ -240,7 +240,9 @@ export default {
     })
   },
   onShow() {
+    // #ifdef APP-plus
     checkAppHotUpdate()
+    // #endif
     // 每次页面显示时计算宝宝年龄
     this.calculateBabyAge()
     this.loadRecentRecords()
@@ -486,6 +488,8 @@ export default {
         groupedRecords: groupedRecords,
         showChart: showChart
       }
+
+      console.log('%c currentTypeRecords', 'color:red; background:yellow;', this.currentTypeRecords)
 
       // 设置图表数据
       this.chartData = chartData

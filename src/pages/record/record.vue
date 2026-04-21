@@ -129,7 +129,7 @@
         <view class="form-item">
           <text class="label">尿布状态</text>
           <view class="radio-group">
-            <label class="radio-item" v-for="level in diaperLevels" :key="level.value">
+            <label class="radio-item" v-for="level in stoolTypes" :key="level.value">
               <radio :value="level.value" :checked="form.diaperFullness === level.value" @click="form.diaperFullness = level.value" />
               <text>{{ level.label }}</text>
             </label>
@@ -191,10 +191,6 @@ export default {
         { label: '红色', value: '5' },
         { label: '白色', value: '6' },
       ],
-      diaperLevels: [
-        { label: '一般', value: 'normal' },
-        { label: '特别满', value: 'full' },
-      ],
       multiSelectorData: {
         dates: (() => {
           const dates = []
@@ -224,7 +220,7 @@ export default {
         feedingType: 'formula',
         stoolType: '2',
         stoolColor: '2',
-        diaperFullness: 'normal',
+        diaperFullness: '2',
         valueName: '',
         value: '',
         time: [0, 0, 0], // [dateIndex, hour, minute] 将在onLoad中设置
@@ -521,7 +517,7 @@ export default {
         })
         return
       }
-
+      console.log('%c record', 'color:red; background:yellow;', record)
       this.doSubmitRecord(record)
     },
     resetForm() {
@@ -543,7 +539,7 @@ export default {
         let color = this.stoolColors.find(item => item.value === this.form.stoolColor);
         return `${type.label} ${color.label}`;
       } else if (this.currentTab === 'diaper') {
-        const level = this.diaperLevels.find(item => item.value === this.form.diaperFullness)
+        const level = this.stoolTypes.find(item => item.value === this.form.diaperFullness)
         return level ? level.label : ''
       }
       return this.form.valueName
