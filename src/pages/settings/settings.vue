@@ -104,9 +104,15 @@
         </view>
       </view>
       <view class="setting-item">
-        <text class="setting-label">版本</text>
+        <text class="setting-label">版本名称</text>
         <view class="setting-value">
           <text>{{ currentInfo.versionName }}</text>
+        </view>
+      </view>
+      <view class="setting-item">
+        <text class="setting-label">版本号</text>
+        <view class="setting-value">
+          <text>{{ currentInfo.versionCode }}</text>
         </view>
       </view>
     </view>
@@ -193,7 +199,7 @@
       }
     },
     async onShow() {
-      // #ifdef APP-plus
+      // #ifdef APP-PLUS
       this.currentInfo = await getCurrentVersionInfo()
       checkAppHotUpdate()
       // #endif

@@ -240,7 +240,7 @@ export default {
     })
   },
   onShow() {
-    // #ifdef APP-plus
+    // #ifdef APP-PLUS
     checkAppHotUpdate()
     // #endif
     // 每次页面显示时计算宝宝年龄
