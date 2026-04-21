@@ -154,13 +154,13 @@
       </view>
 
       <!-- 提交按钮 -->
-      <button class="submit-btn" @click="submitRecord">提交记录</button>
+      <button class="submit-btn" @click="submitRecord">{{ isEdit ? '更新记录' : '提交记录' }}</button>
     </view>
   </view>
 </template>
 
 <script>
-import { addRecord, getDistinctFieldValues } from '@/utils/recordStore.js'
+import { addRecord, getDistinctFieldValues, updateRecord } from '@/utils/recordStore.js'
 
 export default {
   data() {
@@ -218,6 +218,8 @@ export default {
       suggestionField: '',
       suggestionQuery: '',
       suggestionItems: [],
+      isEdit: false,
+      editRecordHashid: '',
       form: {
         feedingType: 'formula',
         stoolType: '2',
@@ -235,8 +237,45 @@ export default {
     const now = new Date()
     this.form.time = [0, now.getHours(), now.getMinutes()]
 
-    // 如果有tab参数，设置当前tab并隐藏tab栏
-    if (options.tab) {
+    // 如果有edit参数，进入编辑模式
+    if (options.edit) {
+      try {
+        const editData = JSON.parse(decodeURIComponent(options.edit))
+        this.isEdit = true
+        this.editRecordHashid = editData.hashid
+        this.currentTab = editData.eventType
+        this.showTabs = false
+
+        // 填充表单数据
+        this.form.valueName = editData.valueName || ''
+        this.form.value = editData.value || ''
+        this.form.note = editData.note || ''
+
+        // 设置时间
+        if (editData.date && editData.time) {
+          const dateIndex = this.multiSelectorData.dates.findIndex(d => d.value === editData.date)
+          const [hour, minute] = editData.time.split(':').map(Number)
+          this.form.time = [dateIndex >= 0 ? dateIndex : 0, hour, minute]
+        }
+
+        // 根据类型设置特定字段
+        if (editData.eventType === 'feeding') {
+          this.form.feedingType = editData.valueName === '辅食' ? 'solid' : 'formula'
+        } else if (editData.eventType === 'stool') {
+          this.form.stoolType = editData.valueName || '2'
+        } else if (editData.eventType === 'nutrition') {
+          this.form.valueName = editData.valueName || ''
+        } else if (editData.eventType === 'medicine') {
+          this.form.valueName = editData.valueName || ''
+        } else if (editData.eventType === 'diaper') {
+          this.form.diaperType = editData.valueName || 'wet'
+        }
+      } catch (e) {
+        console.error('解析编辑数据失败:', e)
+        uni.showToast({ title: '编辑数据解析失败', icon: 'none' })
+      }
+    } else if (options.tab) {
+      // 如果有tab参数，设置当前tab并隐藏tab栏
       this.currentTab = options.tab
       this.showTabs = false
 
@@ -407,18 +446,30 @@ export default {
     },
 
     doSubmitRecord(record) {
-      const result = addRecord(record)
+      let result
+      if (this.isEdit) {
+        result = updateRecord(this.editRecordHashid, record)
+        if (result) {
+          uni.showToast({
+            title: '更新成功',
+            icon: 'success'
+          })
+        }
+      } else {
+        result = addRecord(record)
+        if (result) {
+          uni.showToast({
+            title: '记录成功',
+            icon: 'success'
+          })
+        }
+      }
 
       if (result) {
-        uni.showToast({
-          title: '记录成功',
-          icon: 'success'
-        })
-
         // 重置表单
         this.resetForm()
 
-        // 通知其他页面数据已更新（可选）
+        // 通知其他页面数据已更新
         uni.$emit('recordUpdated', record)
 
         // 跳转到首页
@@ -429,7 +480,7 @@ export default {
         }, 500)
       } else {
         uni.showToast({
-          title: '记录失败，请重试',
+          title: this.isEdit ? '更新失败，请重试' : '记录失败，请重试',
           icon: 'none'
         })
       }

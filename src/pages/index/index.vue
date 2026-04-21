@@ -129,6 +129,10 @@
               <view class="group-record-item" v-for="(record, index) in group" :key="index">
                 <text class="record-time-small">{{ record.time }}</text>
                 <text class="record-detail-small">{{ record.detail }}</text>
+                <view class="record-actions">
+                  <text class="action-btn edit-btn" @click.stop="editRecord(record.originalRecord)">编辑</text>
+                  <text class="action-btn delete-btn" @click.stop="deleteRecordItem(record.originalRecord)">删除</text>
+                </view>
               </view>
             </view>
           </view>
@@ -138,11 +142,23 @@
         </scroll-view>
       </view>
     </view>
+
+    <!-- 删除确认弹窗 -->
+    <view class="delete-confirm-modal" v-if="showDeleteConfirm" @click="cancelDelete">
+      <view class="delete-confirm-content" @click.stop>
+        <view class="delete-confirm-title">确认删除</view>
+        <view class="delete-confirm-message">确定要删除这条记录吗？</view>
+        <view class="delete-confirm-buttons">
+          <button class="delete-confirm-btn cancel-btn" @click="cancelDelete">取消</button>
+          <button class="delete-confirm-btn confirm-btn" @click="confirmDelete">删除</button>
+        </view>
+      </view>
+    </view>
   </view>
 </template>
 
 <script>
-import { getRecords, formatRecordDetail, getBabyInfo, calculateAge } from '@/utils/recordStore.js'
+import { getRecords, formatRecordDetail, getBabyInfo, calculateAge, deleteRecord, updateRecord } from '@/utils/recordStore.js'
 
 export default {
   data() {
@@ -202,7 +218,10 @@ export default {
           icon: '🩲',
           eventType: 'diaper'
         }
-      }
+      },
+      // 删除确认弹窗
+      showDeleteConfirm: false,
+      deleteRecordData: null
     }
   },
   onLoad() {
@@ -539,10 +558,11 @@ export default {
           }
         }
 
-        // 只保存time和detail
+        // 只保存time和detail和originalRecord
         grouped[dateStr].records.push({
           time: record.time,
-          detail: record.detail
+          detail: record.detail,
+          originalRecord: record.originalRecord
         })
         grouped[dateStr].count++
 
@@ -788,6 +808,63 @@ export default {
     scroll: function(e) {
       console.log(e)
       this.old.scrollLeft = e.detail.scrollLeft
+    },
+
+    /**
+     * 编辑记录
+     */
+    editRecord(record) {
+      // 跳转到记录页面，传递记录数据用于编辑
+      const config = this.typeConfig[this.currentTypeRecords.title === '配方奶' ? 'formula' : this.currentTypeRecords.title === '辅食' ? 'solid' : Object.keys(this.typeConfig).find(key => this.typeConfig[key].name === this.currentTypeRecords.title)]
+      if (config) {
+        // 构建编辑参数
+        const editData = {
+          hashid: record.hashid,
+          eventType: record.eventType,
+          valueName: record.valueName,
+          value: record.value,
+          note: record.note,
+          date: record.dateString,
+          time: this.formatRecordTime(record.eventTime)
+        }
+        uni.navigateTo({
+          url: `/pages/record/record?tab=${config.eventType}&edit=${encodeURIComponent(JSON.stringify(editData))}`
+        })
+      }
+    },
+
+    /**
+     * 删除记录
+     */
+    deleteRecordItem(record) {
+      this.deleteRecordData = record
+      this.showDeleteConfirm = true
+    },
+
+    /**
+     * 确认删除
+     */
+    confirmDelete() {
+      if (this.deleteRecordData && deleteRecord(this.deleteRecordData.hashid)) {
+        uni.showToast({ title: '删除成功', icon: 'success' })
+        // 重新加载数据
+        this.loadRecentRecords()
+        // 如果当前有详情弹窗打开，重新显示该类型的记录
+        if (this.showRecordModal) {
+          this.showTypeRecords(this.recentRecords.find(item => item.typeName === this.currentTypeRecords.title))
+        }
+      } else {
+        uni.showToast({ title: '删除失败', icon: 'none' })
+      }
+      this.cancelDelete()
+    },
+
+    /**
+     * 取消删除
+     */
+    cancelDelete() {
+      this.showDeleteConfirm = false
+      this.deleteRecordData = null
     },
   }
 }
@@ -1236,10 +1313,98 @@ export default {
   margin-left: 20rpx;
 }
 
+.record-actions {
+  display: flex;
+  margin-left: 20rpx;
+}
+
+.action-btn {
+  font-size: 24rpx;
+  padding: 8rpx 16rpx;
+  border-radius: 8rpx;
+  margin-left: 10rpx;
+  cursor: pointer;
+}
+
+.edit-btn {
+  color: #4CD964;
+  border: 1rpx solid #4CD964;
+}
+
+.delete-btn {
+  color: #FF3B30;
+  border: 1rpx solid #FF3B30;
+}
+
 .empty-records {
   text-align: center;
   padding: 120rpx 0;
   color: #999999;
   font-size: 30rpx;
+}
+
+/* 删除确认弹窗样式 */
+.delete-confirm-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+}
+
+.delete-confirm-content {
+  background-color: #ffffff;
+  border-radius: 12rpx;
+  padding: 40rpx;
+  width: 600rpx;
+  max-width: 80%;
+}
+
+.delete-confirm-title {
+  font-size: 36rpx;
+  font-weight: bold;
+  color: #333333;
+  text-align: center;
+  margin-bottom: 20rpx;
+}
+
+.delete-confirm-message {
+  font-size: 30rpx;
+  color: #666666;
+  text-align: center;
+  margin-bottom: 40rpx;
+  line-height: 1.5;
+}
+
+.delete-confirm-buttons {
+  display: flex;
+  justify-content: space-between;
+  gap: 20rpx;
+}
+
+.delete-confirm-btn {
+  flex: 1;
+  height: 80rpx;
+  border-radius: 8rpx;
+  font-size: 32rpx;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cancel-btn {
+  background-color: #f5f5f5;
+  color: #666666;
+}
+
+.confirm-btn {
+  background-color: #FF3B30;
+  color: #ffffff;
 }
 </style>

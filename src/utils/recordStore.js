@@ -165,6 +165,54 @@ export function deleteRecord(recordHashid) {
 }
 
 /**
+ * 更新记录
+ * @param {String} recordHashid - 记录hashid
+ * @param {Object} updatedRecord - 更新的记录数据
+ */
+export function updateRecord(recordHashid, updatedRecord) {
+  try {
+    const records = getRecords()
+    const index = records.findIndex(record => record.hashid === recordHashid)
+    if (index === -1) {
+      console.error('未找到要更新的记录')
+      return false
+    }
+
+    // 解析用户选择的时间
+    let eventTime = records[index].eventTime
+    let dateString = records[index].dateString
+    if (updatedRecord.date && updatedRecord.time) {
+      dateString = updatedRecord.date
+      const dateTimeStr = `${updatedRecord.date} ${updatedRecord.time}:00`
+      eventTime = new Date(dateTimeStr).getTime() / 1000
+    } else if (updatedRecord.time) {
+      // 兼容旧格式，只有时分
+      const [hours, minutes] = updatedRecord.time.split(':').map(Number)
+      const now = new Date()
+      now.setHours(hours, minutes, 0, 0)
+      eventTime = now.getTime() / 1000
+    }
+
+    // 更新记录
+    const updated = {
+      ...records[index],
+      dateString: dateString,
+      eventTime: eventTime.toFixed(1),
+      valueName: updatedRecord.valueName || records[index].valueName,
+      value: updatedRecord.value || records[index].value,
+      note: updatedRecord.note || records[index].note
+    }
+
+    records[index] = updated
+    uni.setStorageSync(RECORD_STORAGE_KEY, JSON.stringify(records))
+    return updated
+  } catch (e) {
+    console.error('更新记录失败:', e)
+    return false
+  }
+}
+
+/**
  * 清空所有记录
  */
 export function clearRecords() {
