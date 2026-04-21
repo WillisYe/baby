@@ -25,7 +25,7 @@ const wgtFiles = fs.readdirSync(unpackageDir).filter(file => file.endsWith('.wgt
 if (wgtFiles.length > 0) {
   const wgtFile = wgtFiles[0]
   const srcWgtPath = path.join(unpackageDir, wgtFile)
-  const destWgtPath = path.join(staticDir, '__UNI__E9B6D54.wgt')
+  const destWgtPath = path.join(staticDir, '__UNI__F1A388D.wgt')
   fs.copyFileSync(srcWgtPath, destWgtPath)
   console.log(`Copied WGT file: ${destWgtPath}`)
 } else {

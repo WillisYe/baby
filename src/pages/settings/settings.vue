@@ -93,8 +93,9 @@
     </view>
     <!-- #endif -->
 
+    <!-- #ifdef APP-PLUS -->
     <!-- 关于 -->
-    <view class="settings-section" v-if="false">
+    <view class="settings-section">
       <view class="section-title">关于</view>
       <view class="setting-item" @click="showAbout">
         <text class="setting-label">关于应用</text>
@@ -105,10 +106,11 @@
       <view class="setting-item">
         <text class="setting-label">版本</text>
         <view class="setting-value">
-          <text>1.0.0</text>
+          <text>{{ currentInfo.versionName }}</text>
         </view>
       </view>
     </view>
+    <!-- #endif -->
 
     <!-- WebDAV 配置弹窗 -->
     <view class="modal-mask" v-if="showWebdavModal" @click="closeWebdavModal">
@@ -149,6 +151,7 @@
 <script>
   import { getRecords, getBabyInfo, importRecords, setBabyInfo } from '@/utils/recordStore.js'
   import webdav from '@/utils/webdavService.js'
+  import { getCurrentVersionInfo, checkAppHotUpdate } from '@/utils/appUpdate.js'
 
   export default {
     data() {
@@ -171,7 +174,8 @@
           username: '',
           password: '',
           path: '/baby_records'
-        }
+        },
+        currentInfo: {}
       }
     },
     computed: {
@@ -187,6 +191,10 @@
       if (savedWebdav) {
         this.webdavConfig = savedWebdav
       }
+    },
+    async onShow() {
+      this.currentInfo = await getCurrentVersionInfo()
+      checkAppHotUpdate()
     },
     methods: {
       editName() {
@@ -567,7 +575,7 @@
       },
       showAbout() {
         uni.showToast({
-          title: '关于应用',
+          title: `版本号：${this.currentInfo.versionName}，versionCode：${this.currentInfo.versionCode}`,
           icon: 'none'
         });
       },

@@ -159,6 +159,7 @@
 
 <script>
 import { getRecords, formatRecordDetail, getBabyInfo, calculateAge, deleteRecord, updateRecord } from '@/utils/recordStore.js'
+import { checkAppHotUpdate } from '@/utils/appUpdate.js'
 
 export default {
   data() {
@@ -239,6 +240,7 @@ export default {
     })
   },
   onShow() {
+    checkAppHotUpdate()
     // 每次页面显示时计算宝宝年龄
     this.calculateBabyAge()
     this.loadRecentRecords()

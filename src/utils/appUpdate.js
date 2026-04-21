@@ -1,6 +1,6 @@
 const UPDATE_CONFIG = {
   // 热更新包地址
-  wgtUrl: 'https://baby-3qp.pages.dev/static/h5/__UNI__E9B6D54.wgt',
+  wgtUrl: 'https://baby-3qp.pages.dev/static/h5/__UNI__F1A388D.wgt',
   // 版本信息地址
   versionUrl: 'https://baby-3qp.pages.dev/static/h5/app_version.txt'
 }
@@ -15,7 +15,7 @@ function isAppPlus() {
   // #endif
 }
 
-function getCurrentVersionInfo() {
+export function getCurrentVersionInfo() {
   return new Promise((resolve) => {
     if (!isAppPlus() || typeof plus === 'undefined' || !plus.runtime || !plus.runtime.getProperty) {
       resolve({ versionName: '', versionCode: 0 })
@@ -136,6 +136,42 @@ function showUpdatePrompt(remoteVersionName, changelog) {
   })
 }
 
+/**
+ * 比较两个版本号的大小
+ * @param {string} v1 - 版本号1，格式如 "1.0.1"
+ * @param {string} v2 - 版本号2，格式如 "1.0.1"
+ * @returns {number} 返回值：
+ *   - 负数: v1 < v2
+ *   - 0: v1 === v2
+ *   - 正数: v1 > v2
+ * @example
+ * compareVersion('1.0.1', '1.0.2')   // 返回 -1
+ * compareVersion('1.2.0', '1.1.9')   // 返回 1
+ * compareVersion('1.0.0', '1.0.0')   // 返回 0
+ */
+function compareVersion(v1, v2) {
+    // 将版本号按 '.' 分割成数组，并转换为数字
+    const parts1 = v1.split('.').map(Number);
+    const parts2 = v2.split('.').map(Number);
+
+    // 获取最大长度，以便处理不同长度的版本号（如 1.0 和 1.0.1）
+    const maxLength = Math.max(parts1.length, parts2.length);
+
+    // 逐段比较
+    for (let i = 0; i < maxLength; i++) {
+        // 如果某一段不存在，则视为 0
+        const num1 = parts1[i] || 0;
+        const num2 = parts2[i] || 0;
+
+        if (num1 !== num2) {
+            return num1 - num2;
+        }
+    }
+
+    // 所有段都相等
+    return 0;
+}
+
 export async function checkAppHotUpdate(options = {}) {
   const manual = options.manual === true
 
@@ -155,17 +191,17 @@ export async function checkAppHotUpdate(options = {}) {
       throw new Error('无效的更新信息')
     }
 
-    const remoteVersionCode = parseInt(String(updateInfo.versionCode || updateInfo.version || 0), 10) || 0
-    const currentVersionCode = parseInt(String(currentInfo.versionCode || '0'), 10) || 0
-
-    if (remoteVersionCode <= currentVersionCode) {
+    const remoteVersionCode = updateInfo.versionName
+    const currentVersionCode = currentInfo.versionName
+    console.log('%c remoteVersionCode, currentVersionCode', 'color:red; background:yellow;', remoteVersionCode, currentVersionCode)
+    if (compareVersion(remoteVersionCode, currentVersionCode) <= 0) {
       if (manual) {
         uni.showToast({ title: '当前已是最新版本', icon: 'success' })
       }
       return
     }
 
-    const confirm = await showUpdatePrompt(updateInfo.versionName || updateInfo.version || `v${remoteVersionCode}`, updateInfo.changelog)
+    const confirm = await showUpdatePrompt(`v${remoteVersionCode}`, updateInfo.changelog)
     if (!confirm) {
       return
     }
