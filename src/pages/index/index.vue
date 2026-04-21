@@ -579,14 +579,29 @@ export default {
         const group = grouped[date]
         const countText = `${group.count}次`
         const valueText = ['formula','solid'].includes(type) ? `，${group.totalValue}ml` : ''
-        result[`${date} ${countText}${valueText}`] = group.records
+        const displayDate = this.formatGroupDate(date)
+        result[`${displayDate} ${countText}${valueText}`] = group.records
       })
 
       return result
     },
 
     /**
-     * 格式化记录日期（MM-DD格式）
+     * 格式化分组日期显示（用于分组标题）
+     */
+    formatGroupDate(dateStr) {
+      try {
+        const [year, month, day] = dateStr.split('-').map(Number)
+        const date = new Date(year, month - 1, day)
+        return this.formatDateToMMDD(date)
+      } catch (e) {
+        console.error('格式化分组日期失败:', e)
+        return dateStr
+      }
+    },
+
+    /**
+     * 格式化记录日期（YYYY-MM-DD格式，用于分组）
      */
     formatRecordDate(eventTime) {
       if (!eventTime) return ''
@@ -594,7 +609,10 @@ export default {
       try {
         const timestamp = parseFloat(eventTime) * 1000
         const date = new Date(timestamp)
-        return this.formatDateToMMDD(date)
+        const year = date.getFullYear()
+        const month = (date.getMonth() + 1).toString().padStart(2, '0')
+        const day = date.getDate().toString().padStart(2, '0')
+        return `${year}-${month}-${day}`
       } catch (e) {
         console.error('格式化记录日期失败:', e)
         return ''
@@ -628,18 +646,31 @@ export default {
      * 解析日期字符串为Date对象
      */
     parseDateString(dateStr) {
+      // 提取日期部分（去掉次数和单位信息）
+      const datePart = dateStr.split(' ')[0]
+
       const now = new Date()
-      if (dateStr === '今天') {
+      if (datePart === '今天') {
         return new Date(now.getFullYear(), now.getMonth(), now.getDate())
-      } else if (dateStr === '昨天') {
+      } else if (datePart === '昨天') {
         const yesterday = new Date(now)
         yesterday.setDate(yesterday.getDate() - 1)
         return new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate())
-      } else {
-        // MM-DD格式
-        const [month, day] = dateStr.split('-').map(Number)
-        return new Date(now.getFullYear(), month - 1, day)
+      } else if (datePart.includes('-')) {
+        // 处理 MM-DD 或 YYYY-MM-DD 格式
+        const parts = datePart.split('-').map(Number)
+        if (parts.length === 2) {
+          // MM-DD 格式，使用当前年份
+          const [month, day] = parts
+          return new Date(now.getFullYear(), month - 1, day)
+        } else if (parts.length === 3) {
+          // YYYY-MM-DD 格式
+          const [year, month, day] = parts
+          return new Date(year, month - 1, day)
+        }
       }
+      // 默认返回今天
+      return new Date(now.getFullYear(), now.getMonth(), now.getDate())
     },
 
     /**
