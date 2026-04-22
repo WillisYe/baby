@@ -970,7 +970,7 @@
        * 下载 APK 应用
        */
       downloadApp() {
-        const apkUrl = '/static/baby.apk'
+        const apkUrl = '/static/h5/baby.apk'
         uni.showModal({
           title: '下载应用',
           content: '确定要下载最新版本的APP吗？',
