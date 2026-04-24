@@ -3,10 +3,14 @@
     <!-- 宝宝信息卡片 -->
     <view class="baby-info">
       <view class="baby-avatar">👶</view>
-      <view class="baby-details">
-        <text class="baby-name">{{ babyInfo.name }}</text>
-        <text class="baby-age">{{ babyAge.text }}</text>
-      </view>
+      <div class="">
+        <view class="baby-details">
+          <text class="baby-name">{{ babyInfo.name }}</text>
+          <text class="baby-age">{{ babyAge.text }}</text>
+        </view>
+        <!-- 每日鸡汤 -->
+        <DailySoup />
+      </div>
     </view>
 
     <!-- 快捷操作 -->
@@ -160,6 +164,7 @@
 <script>
 import { getRecords, formatRecordDetail, getBabyInfo, calculateAge, deleteRecord, updateRecord } from '@/utils/recordStore.js'
 import { checkAppHotUpdate } from '@/utils/appUpdate.js'
+import DailySoup from '@/components/DailySoup.vue'
 
 export default {
   data() {
@@ -224,6 +229,9 @@ export default {
       showDeleteConfirm: false,
       deleteRecordData: null
     }
+  },
+  components: {
+    DailySoup
   },
   onLoad() {
     this.babyInfo = getBabyInfo()
@@ -919,25 +927,26 @@ export default {
   align-items: center;
   background-color: #ffffff;
   border-radius: 20rpx;
-  padding: 30rpx;
+  padding: 20rpx;
   margin-bottom: 20rpx;
   box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.1);
 }
 
 .baby-avatar {
-  width: 120rpx;
-  height: 120rpx;
   border-radius: 50%;
   margin-right: 20rpx;
   background-color: #f0f0f0;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 80rpx;
+  font-size: 60rpx;
 }
 
 .baby-details {
   flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
 }
 
 .baby-name {
