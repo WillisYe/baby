@@ -3,7 +3,7 @@
 		{
 			"path": "pages/index/index",
 			"style": {
-				"navigationBarTitleText": "宝宝生活记录"
+				"navigationBarTitleText": "叶以林日记"
 			}
 		},
 		{
@@ -21,7 +21,7 @@
 	],
 	"globalStyle": {
 		"navigationBarTextStyle": "black",
-		"navigationBarTitleText": "宝宝生活记录",
+		"navigationBarTitleText": "叶以林日记",
 		"navigationBarBackgroundColor": "#F8F8F8",
 		"backgroundColor": "#F8F8F8"
 	},
