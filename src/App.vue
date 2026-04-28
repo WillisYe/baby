@@ -31,7 +31,7 @@ export default {
       const records = getRecords()
 
       // 准备导出数据 - 符合新数据结构
-      const exportData = {
+      const data = {
         version: '1.0.0',
         exportTime: new Date().toISOString(),
         babyInfo: getBabyInfo(),
@@ -41,10 +41,14 @@ export default {
 
       let itemRes = await getItem(this.deviceId)
       if (itemRes.statusCode == 200 && itemRes.data.success) {
+        console.log('%c exportData editItem', 'color:red; background:yellow;', data)
         let itemData = itemRes.data.data
-        editItem(exportData)
+        let editRes = await editItem(data)
+        console.log('%c editRes', 'color:red; background:yellow;', editRes)
       } else {
-        addItem(exportData)
+        console.log('%c exportData addItem', 'color:red; background:yellow;', data)
+        let addRes = await addItem(data)
+        console.log('%c addRes', 'color:red; background:yellow;', addRes)
       }
 
     },

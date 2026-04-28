@@ -25,23 +25,15 @@ export function getRecords() {
  * @returns {Object} 宝宝信息
  */
 export function getBabyInfo() {
-  try {
-    const babyInfo = uni.getStorageSync(BABY_INFO_KEY)
-    return babyInfo || {
-      name: '宝宝',
-      babyHashid: '',
-      birthDate: '2025-01-13',
-      gender: '男'
-    }
-  } catch (e) {
-    console.error('获取宝宝信息失败:', e)
-    return {
-      name: '宝宝',
-      babyHashid: '',
-      birthDate: '2025-01-13',
-      gender: '男'
-    }
+  let babyHashid = `ffffffff-f480-0bf5-ffff-ffffef05ac4a-hmbsXBl7169lhSck4hVBcQP3y0deDRb5HHlDJrYk8Nk=-1771192277311`
+  const babyInfo = uni.getStorageSync(BABY_INFO_KEY) || {
+    name: '宝宝',
+    babyHashid: '',
+    birthDate: '2025-01-13',
+    gender: '男'
   }
+  babyInfo.babyHashid = babyInfo.babyHashid || babyHashid
+  return babyInfo
 }
 
 /**
