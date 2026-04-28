@@ -207,10 +207,10 @@ export async function checkAppHotUpdate(options = {}) {
     }
 
     await downloadAndInstallUpdate(updateInfo.wgtUrl)
-    uni.showToast({ title: '更新完成，正在重启', icon: 'success' })
+    uni.showLoading({ title: '正在重启...' })
     setTimeout(() => {
       if (typeof plus !== 'undefined' && plus.runtime && plus.runtime.restart) {
-        uni.hideToast();
+        uni.hideLoading();
         plus.runtime.restart()
       }
     }, 800)
