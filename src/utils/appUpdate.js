@@ -210,6 +210,7 @@ export async function checkAppHotUpdate(options = {}) {
     uni.showToast({ title: '更新完成，正在重启', icon: 'success' })
     setTimeout(() => {
       if (typeof plus !== 'undefined' && plus.runtime && plus.runtime.restart) {
+        uni.hideToast();
         plus.runtime.restart()
       }
     }, 800)
