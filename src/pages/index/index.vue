@@ -598,7 +598,10 @@ export default {
         const countText = `${group.count}次`
         const valueText = ['formula','solid'].includes(type) ? `，${group.totalValue}ml` : ''
         const displayDate = this.formatGroupDate(date)
-        result[`${displayDate} ${countText}${valueText}`] = group.records
+        const singleDetailText = group.count === 1 && group.records[0]?.detail
+          ? `：${group.records[0].detail}`
+          : ''
+        result[`${displayDate} ${countText}${valueText}${singleDetailText}`] = group.records
       })
 
       return result

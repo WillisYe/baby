@@ -1072,15 +1072,7 @@
 
           if (result.status === 'not_found') {
             uni.showToast({
-              title: '备份目录不存在',
-              icon: 'none'
-            })
-            return
-          }
-
-          if (result.status === 'empty') {
-            uni.showToast({
-              title: '没有找到备份文件',
+              title: '未找到备份文件',
               icon: 'none'
             })
             return
@@ -1118,14 +1110,6 @@
             duration: 3000
           })
         }
-      },
-
-      /**
-       * 从文件名中提取时间戳
-       */
-      extractTimestamp(filename) {
-        const match = filename.match(/baby_records_backup_(\d+)\.json/)
-        return match ? parseInt(match[1]) : 0
       },
 
       /**

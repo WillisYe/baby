@@ -87,19 +87,7 @@ function isWebdavHttpStatusError(error) {
   )
 }
 
-function parseBackupFilesFromPropfind(xmlText) {
-  const content = String(xmlText || '')
-  const matches = [...content.matchAll(/<d:href>([^<]+)<\/d:href>/g)]
-  return matches
-    .map((m) => decodeURIComponent(String(m[1] || '')))
-    .map((href) => href.split('/').filter(Boolean).pop() || '')
-    .filter((name) => name.startsWith('baby_records_backup_') && name.endsWith('.json'))
-}
-
-function extractTimestamp(filename) {
-  const match = filename.match(/baby_records_backup_(\d+)\.json/)
-  return match ? parseInt(match[1], 10) : 0
-}
+const LATEST_FILENAME = 'baby_records_latest.json'
 
 function requestWebdavRaw(method, path, config, options = {}) {
   const baseUrl = config.url.replace(/\/+$/, '')
@@ -240,9 +228,7 @@ async function upload(options = {}) {
   const payload = options.data || {}
   const jsonData = JSON.stringify(payload, null, 2)
   const basePath = String(options.path || config.path || DEFAULT_PATH)
-  const fileName = String(options.filename || `baby_records_backup_${Date.now()}.json`)
-  const fullPath = joinWebdavPath(basePath, fileName)
-  const latestPath = joinWebdavPath(basePath, 'baby_records_latest.json')
+  const latestPath = joinWebdavPath(basePath, LATEST_FILENAME)
 
   // #ifndef H5
   try {
@@ -258,15 +244,6 @@ async function upload(options = {}) {
       }
     }
 
-    const putRes = await requestWebdavRaw('PUT', fullPath, config, {
-      data: jsonData,
-      headers: { 'Content-Type': 'application/json; charset=utf-8' }
-    })
-    const putCode = Number(putRes?.statusCode || 0)
-    if (![200, 201, 204].includes(putCode)) {
-      throw new Error(`PUT failed: ${putCode}`)
-    }
-
     const latestRes = await requestWebdavRaw('PUT', latestPath, config, {
       data: jsonData,
       headers: { 'Content-Type': 'application/json; charset=utf-8' }
@@ -276,7 +253,7 @@ async function upload(options = {}) {
       throw new Error(`PUT latest failed: ${latestCode}`)
     }
 
-    return [{ filePath: fullPath, latestPath }, null]
+    return [{ latestPath }, null]
   } catch (err) {
     return [null, err]
   }
@@ -291,13 +268,9 @@ async function upload(options = {}) {
         await client.createDirectory(clientBasePath)
       }
 
-      const fullFilePath = joinWebdavPath(clientBasePath, fileName)
-      const latestFilePath = joinWebdavPath(clientBasePath, 'baby_records_latest.json')
-
-      await client.putFileContents(fullFilePath, jsonData, { format: 'text', overwrite: true })
+      const latestFilePath = joinWebdavPath(clientBasePath, LATEST_FILENAME)
       await client.putFileContents(latestFilePath, jsonData, { format: 'text', overwrite: true })
-
-      return { filePath: fullFilePath, latestPath: latestFilePath }
+      return { latestPath: latestFilePath }
     })
 
     return [result, null]
@@ -314,57 +287,23 @@ async function download(options = {}) {
   }
 
   const basePath = String(options.path || config.path || DEFAULT_PATH)
+  const latestPath = joinWebdavPath(basePath, LATEST_FILENAME)
 
   // #ifndef H5
   try {
-    const listRes = await requestWebdavRaw('PROPFIND', basePath, config, {
-      headers: { Depth: '1' }
-    })
-    const listCode = Number(listRes?.statusCode || 0)
-
-    if (listCode === 404) {
-      return [{ status: 'not_found' }, null]
-    }
-
-    if (listCode === 403) {
-      const latestPath = joinWebdavPath(basePath, 'baby_records_latest.json')
-      const latestRes = await requestWebdavRaw('GET', latestPath, config, {
-        headers: { Accept: 'application/json,text/plain,*/*' }
-      })
-      const latestCode = Number(latestRes?.statusCode || 0)
-      if (latestCode !== 200) {
-        throw new Error(`GET latest failed: ${latestCode}`)
-      }
-
-      const text = typeof latestRes.data === 'string' ? latestRes.data : JSON.stringify(latestRes.data || {})
-      return [{ status: 'ok', data: JSON.parse(text), fileName: 'baby_records_latest.json' }, null]
-    }
-
-    if (![200, 207].includes(listCode)) {
-      throw new Error(`PROPFIND failed: ${listCode}`)
-    }
-
-    const backupFiles = parseBackupFilesFromPropfind(listRes?.data)
-      .map((name) => ({ basename: name, timestamp: extractTimestamp(name) }))
-      .filter((item) => item.timestamp > 0)
-      .sort((a, b) => b.timestamp - a.timestamp)
-
-    if (backupFiles.length === 0) {
-      return [{ status: 'empty' }, null]
-    }
-
-    const latest = backupFiles[0]
-    const filePath = joinWebdavPath(basePath, latest.basename)
-    const fileRes = await requestWebdavRaw('GET', filePath, config, {
+    const latestRes = await requestWebdavRaw('GET', latestPath, config, {
       headers: { Accept: 'application/json,text/plain,*/*' }
     })
-    const fileCode = Number(fileRes?.statusCode || 0)
-    if (fileCode !== 200) {
-      throw new Error(`GET failed: ${fileCode}`)
+    const latestCode = Number(latestRes?.statusCode || 0)
+    if (latestCode === 404) {
+      return [{ status: 'not_found' }, null]
+    }
+    if (latestCode !== 200) {
+      throw new Error(`GET latest failed: ${latestCode}`)
     }
 
-    const text = typeof fileRes.data === 'string' ? fileRes.data : JSON.stringify(fileRes.data || {})
-    return [{ status: 'ok', data: JSON.parse(text), fileName: latest.basename }, null]
+    const text = typeof latestRes.data === 'string' ? latestRes.data : JSON.stringify(latestRes.data || {})
+    return [{ status: 'ok', data: JSON.parse(text), fileName: LATEST_FILENAME }, null]
   } catch (err) {
     return [null, err]
   }
@@ -379,29 +318,9 @@ async function download(options = {}) {
         return { status: 'not_found' }
       }
 
-      try {
-        const contents = await client.getDirectoryContents(clientBasePath)
-        const backupFiles = contents
-          .filter((item) => item.basename && item.basename.startsWith('baby_records_backup_') && item.basename.endsWith('.json'))
-          .map((item) => ({ basename: item.basename, timestamp: extractTimestamp(item.basename) }))
-
-        if (backupFiles.length === 0) {
-          return { status: 'empty' }
-        }
-
-        backupFiles.sort((a, b) => b.timestamp - a.timestamp)
-        const latestFile = backupFiles[0]
-        const filePath = joinWebdavPath(clientBasePath, latestFile.basename)
-        const fileContent = await client.getFileContents(filePath, { format: 'text' })
-        return { status: 'ok', data: JSON.parse(fileContent), fileName: latestFile.basename }
-      } catch (listErr) {
-        if (String(listErr?.response?.status) === '403') {
-          const latestFilePath = joinWebdavPath(clientBasePath, 'baby_records_latest.json')
-          const fileContent = await client.getFileContents(latestFilePath, { format: 'text' })
-          return { status: 'ok', data: JSON.parse(fileContent), fileName: 'baby_records_latest.json' }
-        }
-        throw listErr
-      }
+      const latestFilePath = joinWebdavPath(clientBasePath, LATEST_FILENAME)
+      const fileContent = await client.getFileContents(latestFilePath, { format: 'text' })
+      return { status: 'ok', data: JSON.parse(fileContent), fileName: LATEST_FILENAME }
     })
 
     return [result, null]
