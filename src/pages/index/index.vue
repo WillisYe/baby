@@ -2,7 +2,10 @@
   <view class="content">
     <!-- 宝宝信息卡片 -->
     <view class="baby-info">
-      <view class="baby-avatar">👶</view>
+      <view class="baby-avatar flex-shrink-0">
+        <image v-if="babyInfo.avatarUrl" :src="babyInfo.avatarUrl" class="baby-avatar-image" mode="aspectFill" />
+        <text v-else class="baby-avatar-emoji">👶</text>
+      </view>
       <div class="">
         <view class="baby-details">
           <text class="baby-name">{{ babyInfo.name }}</text>
@@ -186,7 +189,8 @@ export default {
       expandedGroups: {}, // 记录分组展开状态
       babyInfo: {
         name: '宝宝',
-        birthDate: '2025-01-13'
+        birthDate: '2025-01-13',
+        avatarUrl: ''
       },
       babyAge: {
         days: 0,
@@ -933,12 +937,23 @@ export default {
 }
 
 .baby-avatar {
+  width: 120rpx;
+  height: 120rpx;
   border-radius: 50%;
   margin-right: 20rpx;
   background-color: #f0f0f0;
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow: hidden;
+}
+
+.baby-avatar-image {
+  width: 120rpx;
+  height: 120rpx;
+}
+
+.baby-avatar-emoji {
   font-size: 60rpx;
 }
 

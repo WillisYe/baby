@@ -184,7 +184,6 @@ export async function checkAppHotUpdate(options = {}) {
 
   try {
     const currentInfo = await getCurrentVersionInfo()
-    console.log('%c currentInfo', 'color:red; background:yellow;', currentInfo)
     const updateInfo = await fetchUpdateInfo()
 
     if (!updateInfo || !updateInfo.wgtUrl) {
@@ -193,7 +192,6 @@ export async function checkAppHotUpdate(options = {}) {
 
     const remoteVersionCode = updateInfo.versionName
     const currentVersionCode = currentInfo.versionName
-    console.log('%c remoteVersionCode, currentVersionCode', 'color:red; background:yellow;', remoteVersionCode, currentVersionCode)
     if (compareVersion(remoteVersionCode, currentVersionCode) <= 0) {
       if (manual) {
         uni.showToast({ title: '当前已是最新版本', icon: 'success' })

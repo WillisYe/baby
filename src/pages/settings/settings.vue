@@ -3,6 +3,14 @@
     <!-- 宝宝信息设置 -->
     <view class="settings-section">
       <view class="section-title">宝宝信息</view>
+      <view class="setting-item avatar-item" @click="changeBabyAvatar">
+        <text class="setting-label">宝宝头像</text>
+        <view class="setting-value avatar-value">
+          <image v-if="babyInfo.avatarUrl" :src="babyInfo.avatarUrl" class="avatar-preview" mode="aspectFill" />
+          <view v-else class="avatar-placeholder">👶</view>
+          <view class="arrow-icon">></view>
+        </view>
+      </view>
       <view class="setting-item" @click="editName">
         <text class="setting-label">宝宝姓名</text>
         <view class="setting-value">
@@ -166,7 +174,8 @@
           name: '宝宝',
           babyHashid: '',
           birthDate: '2025-01-13',
-          gender: '男'
+          gender: '男',
+          avatarUrl: ''
         },
         webdavConfig: {
           url: '',
@@ -267,6 +276,83 @@
         })
         // 通知首页更新年龄显示
         uni.$emit('babyInfoUpdated')
+      },
+
+      /**
+       * 更换宝宝头像
+       */
+      changeBabyAvatar() {
+        uni.chooseImage({
+          count: 1,
+          sizeType: ['compressed'],
+          sourceType: ['album', 'camera'],
+          success: async (res) => {
+            if (res.tempFilePaths && res.tempFilePaths.length > 0) {
+              try {
+                const avatarUrl = await this.resolveAvatarPath(res.tempFilePaths[0])
+                this.babyInfo.avatarUrl = avatarUrl
+                console.log('%c avatarUrl', 'color:red; background:yellow;', avatarUrl)
+                this.saveBabyInfo()
+              } catch (error) {
+                console.error('保存宝宝头像失败:', error)
+                uni.showToast({
+                  title: '保存头像失败',
+                  icon: 'none'
+                })
+              }
+            }
+          },
+          fail: (err) => {
+            console.error('选择宝宝头像失败:', err)
+          }
+        })
+      },
+
+      resolveAvatarPath(tempPath) {
+        return new Promise((resolve, reject) => {
+          if (!tempPath) {
+            return reject(new Error('头像路径无效'))
+          }
+
+          if (tempPath.startsWith('data:')) {
+            return resolve(tempPath)
+          }
+
+          if (tempPath.startsWith('blob:')) {
+            fetch(tempPath)
+              .then(response => response.blob())
+              .then(blob => {
+                const reader = new FileReader()
+                reader.onloadend = () => {
+                  if (reader.result) {
+                    resolve(reader.result.toString())
+                  } else {
+                    reject(new Error('读取头像数据失败'))
+                  }
+                }
+                reader.onerror = reject
+                reader.readAsDataURL(blob)
+              })
+              .catch(reject)
+            return
+          }
+
+          // #ifdef APP-PLUS
+          uni.saveFile({
+            tempFilePath: tempPath,
+            success: (saveRes) => {
+              resolve(saveRes.savedFilePath || tempPath)
+            },
+            fail: () => {
+              resolve(tempPath)
+            }
+          })
+          // #endif
+
+          // #ifndef APP-PLUS
+          resolve(tempPath)
+          // #endif
+        })
       },
       /**
        * 导出数据并分享
@@ -1038,6 +1124,30 @@
     font-size: 26rpx;
     color: #999999;
     margin-right: 10rpx;
+  }
+
+  .avatar-value {
+    gap: 10rpx;
+  }
+
+  .avatar-preview {
+    width: 80rpx;
+    height: 80rpx;
+    border-radius: 50%;
+    overflow: hidden;
+    background-color: #f0f0f0;
+  }
+
+  .avatar-placeholder {
+    width: 80rpx;
+    height: 80rpx;
+    border-radius: 50%;
+    background-color: #f0f0f0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 36rpx;
+    color: #999999;
   }
 
   .arrow-icon {
