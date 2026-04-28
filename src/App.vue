@@ -20,6 +20,11 @@ export default {
     console.log('App Show')
   },
   onHide () {
+    const savedShareCode = uni.getStorageSync('share_code')
+    if (savedShareCode) {
+      console.log('已保存分享码，跳过自动导出')
+      return
+    }
     this.exportData()
   },
   methods: {

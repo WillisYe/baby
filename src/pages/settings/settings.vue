@@ -49,6 +49,19 @@
           <view class="arrow-icon">></view>
         </view>
       </view>
+      <view class="setting-item" @click="useShareCode">
+        <text class="setting-label">使用分享码导入</text>
+        <view class="setting-value">
+          <view class="arrow-icon">></view>
+        </view>
+      </view>
+      <view class="setting-item" @click="copyDeviceId">
+        <text class="setting-label">复制 deviceId 分享</text>
+        <view class="setting-value">
+          <text>{{ deviceId ? '复制' : '未获取' }}</text>
+          <view class="arrow-icon">></view>
+        </view>
+      </view>
       <view class="setting-item" @click="clearData" style="color: #ff3b30" v-if="false">
         <text class="setting-label">清空数据</text>
         <view class="setting-value">
@@ -164,6 +177,7 @@
 
 <script>
   import { getRecords, getBabyInfo, importRecords, setBabyInfo } from '@/utils/recordStore.js'
+  import { getItem } from '@/utils/api.js'
   import webdav from '@/utils/webdavService.js'
   import { getCurrentVersionInfo, checkAppHotUpdate } from '@/utils/appUpdate.js'
 
@@ -177,6 +191,7 @@
           gender: '男',
           avatarUrl: ''
         },
+        deviceId: '',
         webdavConfig: {
           url: '',
           username: '',
@@ -201,6 +216,13 @@
     onLoad() {
       // 加载宝宝信息
       this.babyInfo = getBabyInfo()
+      // 加载 deviceId
+      try {
+        const systemInfo = uni.getSystemInfoSync() || {}
+        this.deviceId = systemInfo.deviceId || ''
+      } catch (e) {
+        this.deviceId = ''
+      }
       // 加载 WebDAV 配置
       const savedWebdav = uni.getStorageSync('webdav_config')
       if (savedWebdav) {
@@ -306,6 +328,100 @@
             console.error('选择宝宝头像失败:', err)
           }
         })
+      },
+
+      useShareCode() {
+        uni.showModal({
+          title: '使用分享码导入',
+          editable: true,
+          placeholderText: '请输入分享码',
+          success: async (res) => {
+            if (res.confirm && res.content && res.content.trim()) {
+              const shareCode = res.content.trim()
+              uni.showLoading({ title: '导入中...' })
+              try {
+                await this.fetchSharedDataByCode(shareCode)
+                uni.setStorageSync('share_code', shareCode)
+                uni.showToast({ title: '导入成功', icon: 'success' })
+              } catch (error) {
+                console.error('分享码导入失败:', error)
+                uni.showToast({ title: error.message || '分享码导入失败', icon: 'none' })
+              } finally {
+                uni.hideLoading()
+              }
+            }
+          }
+        })
+      },
+
+      copyDeviceId() {
+        if (!this.deviceId) {
+          uni.showToast({ title: '无法获取 deviceId', icon: 'none' })
+          return
+        }
+        uni.setClipboardData({
+          data: this.deviceId,
+          success: () => {
+            uni.showToast({ title: 'deviceId 已复制到剪贴板', icon: 'success' })
+          },
+          fail: () => {
+            uni.showToast({ title: '复制失败，请重试', icon: 'none' })
+          }
+        })
+      },
+
+      async fetchSharedDataByCode(code) {
+        if (!code) {
+          throw new Error('分享码不能为空')
+        }
+
+        const response = await getItem(code)
+        if (!response || response.statusCode !== 200) {
+          throw new Error('获取分享数据失败')
+        }
+
+        const responseData = response.data || {}
+        if (typeof responseData.success !== 'undefined' && !responseData.success) {
+          throw new Error(responseData.message || '分享码无效')
+        }
+
+        const payload = responseData.data || responseData
+        if (!payload || Object.keys(payload).length === 0) {
+          throw new Error('分享数据为空')
+        }
+
+        this.applySharedData(payload)
+      },
+
+      applySharedData(payload) {
+        let babyInfo = null
+        if (payload.babyInfo) {
+          babyInfo = payload.babyInfo
+        } else if (Array.isArray(payload.kExportKeyBabyInfos) && payload.kExportKeyBabyInfos.length > 0) {
+          babyInfo = payload.kExportKeyBabyInfos[0]
+        }
+
+        if (babyInfo) {
+          this.babyInfo = {
+            name: babyInfo.name || '宝宝',
+            babyHashid: babyInfo.babyHashid || babyInfo.hashid || '',
+            birthDate: babyInfo.birthDate || babyInfo.birthday || '2025-01-13',
+            gender: babyInfo.gender === '1' ? '男' : (babyInfo.gender === '0' ? '女' : (babyInfo.gender || '男')),
+            avatarUrl: babyInfo.avatarUrl || ''
+          }
+          setBabyInfo(this.babyInfo)
+        }
+
+        let recordList = []
+        if (Array.isArray(payload.records)) {
+          recordList = payload.records
+        } else if (Array.isArray(payload.kExportKeyEvents)) {
+          recordList = payload.kExportKeyEvents
+        }
+
+        uni.setStorageSync('baby_records', JSON.stringify(recordList || []))
+        uni.$emit('recordUpdated')
+        uni.$emit('babyInfoUpdated')
       },
 
       resolveAvatarPath(tempPath) {
