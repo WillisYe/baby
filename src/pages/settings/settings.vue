@@ -331,13 +331,14 @@
       },
 
       useShareCode() {
+        const savedShareCode = uni.getStorageSync('share_code') || ''
         uni.showModal({
           title: '使用分享码导入',
           editable: true,
-          placeholderText: '请输入分享码',
+          placeholderText: savedShareCode || '请输入分享码',
           success: async (res) => {
-            if (res.confirm && res.content && res.content.trim()) {
-              const shareCode = res.content.trim()
+            if (res.confirm) {
+              const shareCode = res.content.trim() || savedShareCode
               uni.showLoading({ title: '导入中...' })
               try {
                 await this.fetchSharedDataByCode(shareCode)

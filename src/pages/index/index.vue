@@ -129,7 +129,10 @@
           <!-- 记录列表 -->
           <view class="record-group" v-for="(group, date) in currentTypeRecords.groupedRecords" :key="date">
             <view class="group-title" @click="toggleGroup(date)">
-              <text>{{ date }}</text>
+              <text>
+                <text>{{ date }}</text>
+                <text class="group-title-sub">{{ group.detail || '' }}</text>
+              </text>
               <text class="expand-icon">{{ expandedGroups[date] ? '▼' : '▶' }}</text>
             </view>
             <view class="group-records" v-if="expandedGroups[date]">
@@ -601,7 +604,8 @@ export default {
         const singleDetailText = group.count === 1 && group.records[0]?.detail
           ? `：${group.records[0].detail}`
           : ''
-        result[`${displayDate} ${countText}${valueText}${singleDetailText}`] = group.records
+        result[`${displayDate}`] = group.records
+        result[`${displayDate}`].detail = `${countText}${valueText}${singleDetailText}`
       })
 
       return result
@@ -1341,6 +1345,13 @@ export default {
   justify-content: space-between;
   align-items: center;
   cursor: pointer;
+}
+
+.group-title-sub {
+  font-size: 26rpx;
+  font-weight: 400;
+  color: #666666;
+  margin-left: 10rpx;
 }
 
 .expand-icon {

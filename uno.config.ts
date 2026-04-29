@@ -166,19 +166,6 @@ export default defineConfig({
     'flex-center': 'flex items-center justify-center',
     'flex-between': 'flex items-center justify-between',
     'flex-col-center': 'flex flex-col items-center justify-center',
-    // 间距
-    'p-4': 'p-4',
-    'px-4': 'px-4',
-    'py-2': 'py-2',
-    // 圆角
-    'rounded-lg': 'rounded-lg',
-    'rounded-full': 'rounded-full',
-    // 阴影
-    'shadow-sm': 'shadow-sm',
-    'shadow-md': 'shadow-md',
-    // 文字
-    'text-primary': 'text-primary',
-    'text-gray': 'text-gray-500',
     // 按钮
     'btn': 'px-4 py-2 rounded-lg bg-primary text-white font-medium',
     'btn-danger': 'px-4 py-2 rounded-lg bg-danger text-white font-medium',
