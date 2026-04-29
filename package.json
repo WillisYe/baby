@@ -4,7 +4,7 @@
   "scripts": {
     "serve": "run-p dev:h5 build:unocss:watch",
     "build": "node ./scripts/generate-h5-assets.js && uni build",
-    "prebuild": "unocss \"src/**/*.vue\" -o src/static/uno.css",
+    "prebuild": "unocss",
     "dev:custom": "uni -p",
     "dev:h5": "uni",
     "dev:h5:ssr": "uni --ssr",
@@ -38,7 +38,7 @@
     "build:quickapp-webview": "uni build -p quickapp-webview",
     "build:quickapp-webview-huawei": "uni build -p quickapp-webview-huawei",
     "build:quickapp-webview-union": "uni build -p quickapp-webview-union",
-    "build:unocss:watch": "unocss \"src/**/*.vue\" -o src/static/uno.css --watch"
+    "build:unocss:watch": "unocss --watch"
   },
   "dependencies": {
     "@dcloudio/uni-app": "3.0.0-5000620260331001",
