@@ -56,7 +56,7 @@
         </view>
       </view>
       <view class="setting-item" @click="copyDeviceId">
-        <text class="setting-label">复制 deviceId 分享</text>
+        <text class="setting-label">复制分享码</text>
         <view class="setting-value">
           <text>{{ deviceId ? '复制' : '未获取' }}</text>
           <view class="arrow-icon">></view>
