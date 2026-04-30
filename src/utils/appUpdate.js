@@ -177,7 +177,7 @@ export async function checkAppHotUpdate(options = {}) {
 
   if (!isAppPlus()) {
     if (manual) {
-      uni.showToast({ title: '当前非 APP 端，无法检查热更新', icon: 'none' })
+      uni.showToast({ title: '当前非APP端，无法热更新', icon: 'none' })
     }
     return
   }
@@ -215,7 +215,7 @@ export async function checkAppHotUpdate(options = {}) {
   } catch (error) {
     console.error('热更检查失败:', error)
     if (manual) {
-      uni.showToast({ title: `检查更新失败: ${error.message || '请稍后重试'}`, icon: 'none', duration: 3000 })
+      uni.showToast({ title: '检查更新失败', icon: 'none', duration: 3000 })
     }
   }
 }

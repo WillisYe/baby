@@ -363,7 +363,7 @@
         uni.setClipboardData({
           data: this.deviceId,
           success: () => {
-            uni.showToast({ title: 'deviceId 已复制到剪贴板', icon: 'success' })
+            uni.showToast({ title: '已复制到剪贴板', icon: 'success' })
           },
           fail: () => {
             uni.showToast({ title: '复制失败，请重试', icon: 'none' })
@@ -785,9 +785,10 @@
         });
       },
       showAbout() {
-        uni.showToast({
-          title: `版本号：${this.currentInfo.versionName}，versionCode：${this.currentInfo.versionCode}`,
-          icon: 'none'
+        uni.showModal({
+          title: '关于应用',
+          content: `版本：${this.currentInfo.versionName}`,
+          showCancel: false
         });
       },
 
@@ -918,7 +919,7 @@
 
           if (result.status === 'forbidden') {
             uni.showToast({
-              title: '✔️ 连接成功（当前目录权限受限）',
+              title: '连接成功（权限受限）',
               icon: 'none',
               duration: 3000
             })
@@ -935,7 +936,7 @@
 
           if (result.status === 'unauthorized') {
             uni.showToast({
-              title: '认证失败，请检查用户名和密码',
+              title: '认证失败',
               icon: 'none'
             })
             return
