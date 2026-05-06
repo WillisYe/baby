@@ -19,12 +19,9 @@ fs.writeFileSync(versionFile, versionName, 'utf-8')
 console.log(`Generated version file: ${versionFile} with version: ${versionName}`)
 
 // 查找 WGT 文件
-const unpackageDir = path.join(__dirname, '..', 'unpackage')
-const wgtFiles = fs.readdirSync(unpackageDir).filter(file => file.endsWith('.wgt'))
+const srcWgtPath = path.join(__dirname, '..', 'unpackage', 'release', '__UNI__F1A388D.wgt')
 
-if (wgtFiles.length > 0) {
-  const wgtFile = wgtFiles[0]
-  const srcWgtPath = path.join(unpackageDir, wgtFile)
+if (fs.existsSync(srcWgtPath)) {
   const destWgtPath = path.join(staticDir, '__UNI__F1A388D.wgt')
   fs.copyFileSync(srcWgtPath, destWgtPath)
   console.log(`Copied WGT file: ${destWgtPath}`)

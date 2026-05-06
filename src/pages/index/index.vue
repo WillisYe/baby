@@ -351,6 +351,14 @@ export default {
         }
       })
       this.recentRecords = result.sort((a, b) => parseFloat(b.latestRecordTime) - parseFloat(a.latestRecordTime))
+
+      // 如果记录详情弹窗处于打开状态，同步刷新弹窗内容
+      if (this.showRecordModal) {
+        const currentItem = this.recentRecords.find(item => item.typeName === this.currentTypeRecords.title)
+        if (currentItem) {
+          this.showTypeRecords(currentItem)
+        }
+      }
     },
 
     /**
