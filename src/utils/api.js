@@ -29,3 +29,11 @@ export function getItem(deviceId) {
     data: {}
   })
 }
+
+export function deleteItem(deviceId) {
+  return uni.request({
+    url: `https://baby-logbook--willisye.replit.app/api/babies/${deviceId}`,
+    method: 'DELETE',
+    data: {}
+  })
+}

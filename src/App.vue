@@ -1,6 +1,6 @@
 <script>
 import { getRecords, getBabyInfo, setBabyInfo } from '@/utils/recordStore.js'
-import { getItem, addItem, editItem } from '@/utils/api.js'
+import { getItem, addItem, deleteItem } from '@/utils/api.js'
 export default {
   data() {
     return {
@@ -108,16 +108,12 @@ export default {
 
       let itemRes = await getItem(this.deviceId)
       if (itemRes.statusCode == 200 && itemRes.data.success) {
-        console.log('%c exportData editItem', 'color:red; background:yellow;', data)
-        let itemData = itemRes.data.data
-        let editRes = await editItem(data)
-        console.log('%c editRes', 'color:red; background:yellow;', editRes)
-      } else {
-        console.log('%c exportData addItem', 'color:red; background:yellow;', data)
-        let addRes = await addItem(data)
-        console.log('%c addRes', 'color:red; background:yellow;', addRes)
+        console.log('%c exportData deleteItem', 'color:red; background:yellow;', this.deviceId)
+        await deleteItem(this.deviceId)
       }
-
+      console.log('%c exportData addItem', 'color:red; background:yellow;', data)
+      let addRes = await addItem(data)
+      console.log('%c addRes', 'color:red; background:yellow;', addRes)
     },
   }
 }
